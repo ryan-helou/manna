@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/session";
 import { cutsFor, readState } from "@/lib/state";
 import { today } from "@/lib/dates";
 import { allChapters, bookByName, type Ref } from "@/lib/bible";
+import { announceMilestones } from "@/lib/milestones";
 
 export const dynamic = "force-dynamic";
 
@@ -52,10 +53,17 @@ export async function POST(req: Request) {
     refs = allChapters().slice(cuts[day - 1], cuts[day]);
   }
 
-  if (body.done === false) await store.clearRead(planId, me.id, refs);
-  // Stamped with the calendar day it was ticked, which is what streaks count.
-  // Catching up on Thursday is still showing up on Thursday.
-  else await store.markRead(planId, me.id, refs, today());
+  if (body.done === false) {
+    await store.clearRead(planId, me.id, refs);
+  } else {
+    // Stamped with the calendar day it was ticked, which is what streaks count.
+    // Catching up on Thursday is still showing up on Thursday.
+    await store.markRead(planId, me.id, refs, today());
+    // Finishing a section of the canon is worth the group hearing about. Ten
+    // times a plan, so it stays an event rather than noise. Never blocks the
+    // tick: a push that fails must not fail the reading.
+    void announceMilestones(planId, me.id).catch(() => {});
+  }
 
   return NextResponse.json(await readState());
 }

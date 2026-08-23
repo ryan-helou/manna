@@ -1,9 +1,10 @@
 "use client";
 
 import { Glyph } from "./Glyph";
-import { formatMinutes, type DayKey } from "@/lib/dates";
-import { currentDay, dayProgress, standings, totalDays } from "@/lib/progress";
-import type { ActivePlan, User } from "@/lib/types";
+import { formatMinutes } from "@/lib/dates";
+import { totalDays } from "@/lib/progress";
+import { timeAgo } from "@/lib/dates";
+import type { ActivePlan, FeedNote, User } from "@/lib/types";
 
 /**
  * Everyone in the plan, ordered by how far through they are.
@@ -17,24 +18,19 @@ import type { ActivePlan, User } from "@/lib/types";
 export function TogetherTab({
   plan,
   me,
-  today,
+  feed,
 }: {
   plan: ActivePlan;
   me: User;
-  today: DayKey;
+  feed: FeedNote[];
 }) {
-  const board = standings(plan, today);
+  const board = plan.standings;
   const days = totalDays(plan);
   const myRank = board.findIndex((s) => s.userId === me.id) + 1;
   const mine = board[myRank - 1];
   const ahead = myRank > 1 ? board[myRank - 2] : null;
 
-  // Who has finished today's reading, on their own day of the plan.
-  const doneToday = board.filter((s) => {
-    const d = currentDay(plan, today, s.userId);
-    const { done, total } = dayProgress(plan, s.userId, d);
-    return total > 0 && done === total;
-  });
+  const doneToday = board.filter((s) => s.readToday);
   const iAmDone = doneToday.some((s) => s.userId === me.id);
 
   return (
@@ -107,7 +103,7 @@ export function TogetherTab({
           {board.map((s, i) => {
             const isMe = s.userId === me.id;
             const pct = days ? (s.daysDone / days) * 100 : 0;
-            const theirDay = currentDay(plan, today, s.userId);
+            const theirDay = s.day;
             return (
               <li key={s.userId}>
                 <div className="flex items-baseline justify-between gap-3">
@@ -154,18 +150,18 @@ export function TogetherTab({
                   )}
                   <span
                     className={
-                      s.pace.status === "behind"
+                      s.status === "behind"
                         ? "text-warn"
-                        : s.pace.status === "ahead"
+                        : s.status === "ahead"
                           ? "text-good"
                           : "text-ink-3"
                     }
                   >
-                    {s.pace.status === "on-pace"
+                    {s.status === "on-pace"
                       ? "on pace"
-                      : s.pace.status === "ahead"
-                        ? `${s.pace.delta} ahead`
-                        : `${-s.pace.delta} behind`}
+                      : s.status === "ahead"
+                        ? `${s.delta} ahead`
+                        : `${-s.delta} behind`}
                   </span>
                 </div>
               </li>
@@ -177,6 +173,36 @@ export function TogetherTab({
           <span aria-hidden className="inline-block h-3 w-px bg-ink-3" />
           the line marks where each person&apos;s own plan says they should be tonight
         </p>
+      </section>
+
+      {/* ---- what people have been writing ---- */}
+      <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "120ms" }}>
+        <p className="eyebrow flex items-center gap-1.5 text-ink-2">
+          <Glyph name="note" className="h-3.5 w-3.5" />
+          Lately
+        </p>
+        {feed.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-2">
+            Nothing written yet. Notes you leave on a day show up here for everyone.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {feed.map((n) => (
+              <li key={n.id} className="rounded-xl border border-line bg-page-2 px-4 py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-sm font-semibold text-ink">{n.authorName}</span>
+                  <span className="stat shrink-0 text-xs text-ink-3">{timeAgo(n.createdAt)}</span>
+                </div>
+                <p className="serif mt-0.5 text-xs text-ink-3">
+                  Day {n.day} &middot; {n.reference}
+                </p>
+                <p className="mt-1.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap text-ink-2">
+                  {n.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

@@ -112,8 +112,9 @@ export function AppShell({
     return (
       <AuthScreen
         busy={busy}
-        onSubmit={(mode, username, password) =>
-          post("/api/session", { mode, username, password })
+        inviteRequired={state.inviteRequired}
+        onSubmit={(mode, username, password, invite) =>
+          post("/api/session", { mode, username, password, invite })
         }
       />
     );
@@ -173,7 +174,7 @@ export function AppShell({
             }
           />
         )}
-        {tab === "together" && <TogetherTab plan={plan} me={state.me} today={refDay} />}
+        {tab === "together" && <TogetherTab plan={plan} me={state.me} feed={state.feed} />}
         {tab === "journey" && <JourneyTab plan={plan} me={state.me} today={refDay} />}
       </main>
 
@@ -219,6 +220,11 @@ export function AppShell({
             void send(`/api/plans/${plan.id}/members`, {
               method: "PATCH",
               body: JSON.stringify({ userId, canEdit }),
+            })
+          }
+          onRemove={(userId) =>
+            void send(`/api/plans/${plan.id}/members?userId=${encodeURIComponent(userId)}`, {
+              method: "DELETE",
             })
           }
           onSignOut={() => void send("/api/session", { method: "DELETE" })}

@@ -9,19 +9,27 @@ import { Glyph } from "./Glyph";
  */
 export function AuthScreen({
   busy,
+  inviteRequired,
   onSubmit,
 }: {
   busy: boolean;
-  onSubmit: (mode: "signin" | "register", username: string, password: string) => Promise<string | null>;
+  inviteRequired: boolean;
+  onSubmit: (
+    mode: "signin" | "register",
+    username: string,
+    password: string,
+    invite: string,
+  ) => Promise<string | null>;
 }) {
   const [mode, setMode] = useState<"signin" | "register">("signin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [invite, setInvite] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError(await onSubmit(mode, username, password));
+    setError(await onSubmit(mode, username, password, invite));
   }
 
   const field =
@@ -72,6 +80,24 @@ export function AuthScreen({
           placeholder={mode === "register" ? "at least 8 characters" : ""}
           className={field}
         />
+
+        {mode === "register" && inviteRequired && (
+          <>
+            <label htmlFor="invite" className="eyebrow mt-5 block text-ink-2">
+              Invite word
+            </label>
+            <input
+              id="invite"
+              value={invite}
+              onChange={(e) => setInvite(e.target.value)}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="from whoever asked you to join"
+              className={field}
+            />
+          </>
+        )}
 
         {error && (
           <p role="alert" className="mt-4 text-sm font-medium text-warn">

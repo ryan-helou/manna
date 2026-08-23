@@ -72,6 +72,10 @@ export interface Store {
   listMembers(planId: string): Promise<Member[]>;
   isMember(planId: string, userId: string): Promise<boolean>;
   setCanEdit(planId: string, userId: string, canEdit: boolean): Promise<void>;
+  /** Drop someone from a plan, along with their reads and notes in it. */
+  removeMember(planId: string, userId: string): Promise<void>;
+  /** Whether someone was removed from a plan and must not be let back in. */
+  isRemoved(planId: string, userId: string): Promise<boolean>;
 
   // Reading, stored per chapter rather than per day.
   listReads(planId: string): Promise<ChapterRead[]>;
@@ -236,6 +240,16 @@ class PgStore implements Store {
         await this.pool.query(
           `CREATE INDEX IF NOT EXISTS push_subs_user_idx ON push_subs (user_id)`,
         );
+        // Removing someone has to stick. Signing in is what puts you in the
+        // plan, so without this the person you just ejected is back on their
+        // next page load.
+        await this.pool.query(`
+          CREATE TABLE IF NOT EXISTS plan_removals (
+            plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            removed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            PRIMARY KEY (plan_id, user_id)
+          )`);
         await this.pool.query(`
           CREATE TABLE IF NOT EXISTS meta (
             key TEXT PRIMARY KEY,
@@ -431,6 +445,34 @@ class PgStore implements Store {
     );
   }
 
+  async removeMember(planId: string, userId: string): Promise<void> {
+    await this.init();
+    // Their reads and notes go with them: if someone got in who should not
+    // have, leaving their writing behind defeats the point.
+    await this.pool.query(
+      `DELETE FROM chapter_reads WHERE plan_id = $1 AND user_id = $2`, [planId, userId],
+    );
+    await this.pool.query(
+      `DELETE FROM notes WHERE plan_id = $1 AND user_id = $2`, [planId, userId],
+    );
+    await this.pool.query(
+      `DELETE FROM plan_members WHERE plan_id = $1 AND user_id = $2`, [planId, userId],
+    );
+    await this.pool.query(
+      `INSERT INTO plan_removals (plan_id, user_id) VALUES ($1, $2)
+       ON CONFLICT (plan_id, user_id) DO NOTHING`,
+      [planId, userId],
+    );
+  }
+
+  async isRemoved(planId: string, userId: string): Promise<boolean> {
+    await this.init();
+    const r = await this.pool.query(
+      `SELECT 1 FROM plan_removals WHERE plan_id = $1 AND user_id = $2`, [planId, userId],
+    );
+    return (r.rowCount ?? 0) > 0;
+  }
+
   async listReads(planId: string): Promise<ChapterRead[]> {
     await this.init();
     const r = await this.pool.query(
@@ -568,6 +610,7 @@ class MemoryStore implements Store {
   private members = new Map<string, Map<string, { canEdit: boolean; joinedAt: string; startDay: DayKey }>>();
   private reads = new Map<string, ChapterRead[]>();
   private notes = new Map<string, Note[]>();
+  private removals = new Map<string, Set<string>>();
   private weights = new Map<string, number>();
   private subs = new Map<string, StoredSub>();
   private meta = new Map<string, string>();
@@ -698,6 +741,18 @@ class MemoryStore implements Store {
   async setCanEdit(planId: string, userId: string, canEdit: boolean): Promise<void> {
     const m = this.members.get(planId)?.get(userId);
     if (m) m.canEdit = canEdit;
+  }
+
+  async removeMember(planId: string, userId: string): Promise<void> {
+    this.members.get(planId)?.delete(userId);
+    this.reads.set(planId, (this.reads.get(planId) ?? []).filter((r) => r.userId !== userId));
+    this.notes.set(planId, (this.notes.get(planId) ?? []).filter((n) => n.userId !== userId));
+    if (!this.removals.has(planId)) this.removals.set(planId, new Set());
+    this.removals.get(planId)!.add(userId);
+  }
+
+  async isRemoved(planId: string, userId: string) {
+    return this.removals.get(planId)?.has(userId) ?? false;
   }
 
   async listReads(planId: string) {

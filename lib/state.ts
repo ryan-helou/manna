@@ -3,15 +3,15 @@ import { cookies } from "next/headers";
 import { getStore } from "./db";
 import { currentUser } from "./session";
 import { partition } from "./schedule";
-import { allChapters } from "./bible";
+import { allChapters, formatRefs } from "./bible";
 import { weightOf } from "./weights";
 import { planLengthDays } from "./dates";
 import { pushConfigured } from "./push";
-import { chaptersForDay, currentDay, verseOfTheDay } from "./progress";
+import { chaptersForDay, computeStandings, currentDay, verseOfTheDay } from "./progress";
 import { quizForDay } from "./quiz";
 import { fetchVerseText } from "./verse-text";
 import { today } from "./dates";
-import type { ActivePlan, AppState } from "./types";
+import type { ActivePlan, AppState, FeedNote } from "./types";
 
 /**
  * The whole app is one payload. Two readers and a year of ticks is a few
@@ -44,7 +44,11 @@ export async function readState(): Promise<AppState> {
   const store = getStore();
   const me = await currentUser();
   if (!me) {
-    return { me: null, plans: [], active: null, verse: null, quiz: [], push: { configured: pushConfigured() } };
+    return {
+      me: null, plans: [], active: null, verse: null, quiz: [], feed: [],
+      push: { configured: pushConfigured() },
+      inviteRequired: !!process.env.SIGNUP_SECRET,
+    };
   }
 
   // Everyone reads the same plan. There is no code to hand round: signing in
@@ -53,7 +57,9 @@ export async function readState(): Promise<AppState> {
   let plans = await store.listPlansFor(me.id);
   if (plans.length === 0) {
     const shared = await store.getSharedPlan();
-    if (shared) {
+    // Unless they were removed from it, in which case signing in again must not
+    // quietly undo that.
+    if (shared && !(await store.isRemoved(shared.id, me.id))) {
       await store.addMember(shared.id, me.id, false, today());
       plans = await store.listPlansFor(me.id);
     }
@@ -66,6 +72,7 @@ export async function readState(): Promise<AppState> {
   let active: ActivePlan | null = null;
   let verse: AppState["verse"] = null;
   let quiz: AppState["quiz"] = [];
+  let feed: FeedNote[] = [];
   if (chosen) {
     const [plan, members, reads, notes] = await Promise.all([
       store.getPlan(chosen.id),
@@ -75,7 +82,7 @@ export async function readState(): Promise<AppState> {
     ]);
     if (plan) {
       const mine = members.find((m) => m.id === me.id);
-      active = {
+      const shell = {
         id: plan.id,
         name: plan.name,
         months: plan.months,
@@ -85,10 +92,34 @@ export async function readState(): Promise<AppState> {
         canEdit: !!mine?.canEdit,
         members,
         cuts: cutsFor(plan.startDay, plan.months),
-        reads,
-        notes,
       };
-      const day = currentDay(active, today(), me.id);
+      const now = today();
+      const standings = computeStandings(shell, reads, now);
+      // Only your own ticks travel. Everyone else is in `standings`.
+      const myReads = reads.filter((r) => r.userId === me.id);
+      const day = currentDay({ ...shell, reads: myReads, standings, notes: [] }, now, me.id);
+
+      // The feed carries the latest notes across the plan; the day card carries
+      // the day you are looking at. Sending every note of a year would put us
+      // back where the reads were.
+      const nameOf = new Map(members.map((m) => [m.id, m.displayName]));
+      const chapters = allChapters();
+      const cuts = shell.cuts;
+      feed = [...notes]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 60)
+        .map((n) => ({
+          ...n,
+          authorName: nameOf.get(n.userId) ?? "Someone",
+          reference: formatRefs(chapters.slice(cuts[n.day - 1], cuts[n.day])),
+        }));
+
+      active = {
+        ...shell,
+        reads: myReads,
+        standings,
+        notes: notes.filter((n) => n.day === day),
+      };
       quiz = quizForDay(active.id, day, chaptersForDay(active, day));
       const pick = verseOfTheDay(active, day);
       if (pick) {
@@ -102,5 +133,9 @@ export async function readState(): Promise<AppState> {
     }
   }
 
-  return { me, plans, active, verse, quiz, push: { configured: pushConfigured() } };
+  return {
+    me, plans, active, verse, quiz, feed,
+    push: { configured: pushConfigured() },
+    inviteRequired: !!process.env.SIGNUP_SECRET,
+  };
 }

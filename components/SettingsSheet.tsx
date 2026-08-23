@@ -18,6 +18,7 @@ export function SettingsSheet({
   onSavePlan,
   onSaveProfile,
   onToggleEdit,
+  onRemove,
   onSignOut,
 }: {
   plan: ActivePlan;
@@ -35,6 +36,7 @@ export function SettingsSheet({
     newPassword?: string;
   }) => Promise<string | null>;
   onToggleEdit: (userId: string, canEdit: boolean) => void;
+  onRemove: (userId: string) => void;
   onSignOut: () => void;
 }) {
   const [name, setName] = useState(plan.name);
@@ -53,6 +55,7 @@ export function SettingsSheet({
   const [newPw, setNewPw] = useState("");
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSaved, setPwSaved] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
   const isCreator = plan.creatorId === me.id;
   const dirty = name !== plan.name || months !== plan.months;
@@ -247,6 +250,11 @@ export function SettingsSheet({
             <Glyph name="users" className="h-3.5 w-3.5" />
             Who is reading
           </p>
+          {isCreator && plan.members.length > 1 && (
+            <p className="mt-1.5 text-xs text-ink-3">
+              Tap the bin twice to remove someone. Their reading and notes go with them.
+            </p>
+          )}
           <ul className="mt-3 space-y-2">
             {plan.members.map((m) => (
               <li
@@ -265,15 +273,35 @@ export function SettingsSheet({
                   </span>
                 </span>
                 {isCreator && !m.isCreator && (
-                  <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-ink-2">
-                    can edit
-                    <input
-                      type="checkbox"
-                      checked={m.canEdit}
-                      onChange={(e) => onToggleEdit(m.id, e.target.checked)}
-                      className="h-4 w-4 accent-[var(--accent)]"
-                    />
-                  </label>
+                  <span className="flex shrink-0 items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-2">
+                      can edit
+                      <input
+                        type="checkbox"
+                        checked={m.canEdit}
+                        onChange={(e) => onToggleEdit(m.id, e.target.checked)}
+                        className="h-4 w-4 accent-[var(--accent)]"
+                      />
+                    </label>
+                    <button
+                      onClick={() => {
+                        // Their reading and their notes go too, so make sure.
+                        if (confirmRemove === m.id) onRemove(m.id);
+                        else {
+                          setConfirmRemove(m.id);
+                          setTimeout(() => setConfirmRemove(null), 4000);
+                        }
+                      }}
+                      aria-label={`Remove ${m.displayName} from the plan`}
+                      className={`rounded-lg p-1.5 transition ${
+                        confirmRemove === m.id
+                          ? "bg-warn/15 text-warn"
+                          : "text-ink-3 hover:text-warn"
+                      }`}
+                    >
+                      <Glyph name="trash" className="h-4 w-4" />
+                    </button>
+                  </span>
                 )}
               </li>
             ))}

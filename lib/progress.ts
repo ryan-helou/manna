@@ -2,7 +2,7 @@ import { allChapters, BOOKS, SECTIONS, type Ref } from "./bible";
 import { weightOf } from "./weights";
 import { versePick } from "./verse-picks";
 import { addDays, daysBetween, type DayKey } from "./dates";
-import type { ActivePlan, ChapterRead } from "./types";
+import type { ActivePlan, ChapterRead, Standing } from "./types";
 
 /**
  * Everything the app tells you about how a plan is going: what is due today,
@@ -283,34 +283,55 @@ export function milestonesFor(plan: ActivePlan, userId: string): Milestone[] {
 }
 
 // ---------------------------------------------------------------------------
-// Head to head
+// The group
 // ---------------------------------------------------------------------------
 
-export interface Standing {
-  userId: string;
-  displayName: string;
-  daysDone: number;
-  chaptersRead: number;
-  minutes: number;
-  streak: number;
-  pace: Pace;
-}
+/**
+ * Everyone's position, worked out from the full set of reads.
+ *
+ * Runs on the server. The client is given the result rather than the raw ticks,
+ * because twelve people's ticks are close to a megabyte and this is the only
+ * thing they were ever used for.
+ */
+export function computeStandings(
+  plan: Omit<ActivePlan, "reads" | "standings" | "notes">,
+  allReads: ChapterRead[],
+  today: DayKey,
+): Standing[] {
+  const byUser = new Map<string, ChapterRead[]>();
+  for (const r of allReads) {
+    if (!byUser.has(r.userId)) byUser.set(r.userId, []);
+    byUser.get(r.userId)!.push(r);
+  }
 
-export function standings(plan: ActivePlan, today: DayKey): Standing[] {
   return plan.members
     .map((m) => {
-      const s = statsFor(plan, m.id, today);
+      // A view of the plan holding just this person's reads, so the same
+      // functions that answer for you answer for them.
+      const view = {
+        ...plan,
+        reads: byUser.get(m.id) ?? [],
+        standings: [],
+        notes: [],
+      } as ActivePlan;
+      const stats = statsFor(view, m.id, today);
+      const pace = paceFor(view, m.id, today);
+      const day = currentDay(view, today, m.id);
+      const progress = dayProgress(view, m.id, day);
       return {
         userId: m.id,
         displayName: m.displayName,
-        daysDone: s.daysDone,
-        chaptersRead: s.chaptersRead,
-        minutes: s.minutesInvested,
-        streak: streakFor(plan, m.id, today),
-        pace: paceFor(plan, m.id, today),
+        daysDone: stats.daysDone,
+        chaptersRead: stats.chaptersRead,
+        minutes: stats.minutesInvested,
+        streak: streakFor(view, m.id, today),
+        delta: pace.delta,
+        status: pace.status,
+        day,
+        readToday: progress.total > 0 && progress.done === progress.total,
       };
     })
-    .sort((a, b) => b.daysDone - a.daysDone || b.minutes - a.minutes);
+    .sort((a, b) => b.daysDone - a.daysDone || b.chaptersRead - a.chaptersRead);
 }
 
 // ---------------------------------------------------------------------------

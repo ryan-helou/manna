@@ -49,6 +49,31 @@ export interface Note {
   createdAt: string;
 }
 
+/**
+ * One person's position, worked out on the server.
+ *
+ * Everybody's individual chapter ticks used to travel to every phone so the
+ * client could compute this itself. That was fine for two readers and absurd
+ * for twelve: a finished plan came to 14,268 rows and close to a megabyte, sent
+ * again on every tap, because each mutation returns the state. The reads that
+ * travel now are your own; everyone else arrives as these numbers.
+ */
+export interface Standing {
+  userId: string;
+  displayName: string;
+  daysDone: number;
+  chaptersRead: number;
+  minutes: number;
+  streak: number;
+  /** Positive is ahead, negative is behind, zero is on pace. */
+  delta: number;
+  status: "ahead" | "on-pace" | "behind";
+  /** Which day of the plan they are on, by their own start. */
+  day: number;
+  /** Whether they have finished today's reading. */
+  readToday: boolean;
+}
+
 /** Everything about the plan currently on screen. */
 export interface ActivePlan {
   id: string;
@@ -66,7 +91,11 @@ export interface ActivePlan {
    * client already has the canon and the weights.
    */
   cuts: number[];
+  /** Your own ticks only. Everyone else is summarised in `standings`. */
   reads: ChapterRead[];
+  /** Everyone in the plan, most finished first. */
+  standings: Standing[];
+  /** Notes on the day currently being viewed. Others are fetched on demand. */
   notes: Note[];
 }
 
@@ -87,6 +116,13 @@ export interface QuizQuestion {
   note?: string;
 }
 
+/** A note with enough context to read it out of its day. */
+export interface FeedNote extends Note {
+  authorName: string;
+  /** "Genesis 1 to 4", so the note makes sense away from the day card. */
+  reference: string;
+}
+
 export interface AppState {
   me: User | null;
   plans: PlanSummary[];
@@ -98,7 +134,11 @@ export interface AppState {
    * covers today only rather than any day you can navigate to.
    */
   quiz: QuizQuestion[];
+  /** The most recent notes across the whole plan, newest first. */
+  feed: FeedNote[];
   push: { configured: boolean };
+  /** Whether registering needs the shared invite word. */
+  inviteRequired: boolean;
 }
 
 export const MIN_MONTHS = 1;

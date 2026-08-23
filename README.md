@@ -30,8 +30,9 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
   actually missed rather than in days.
 - **Streaks.** Consecutive days logged. The day rolls over at 3 AM, not midnight.
 - **Together.** The whole group, ordered by how far through they are, with who
-  has read today at a glance. The gap quoted beside your rank is to the person
-  immediately ahead rather than to the leader.
+  has read today at a glance, and a feed of what people have written lately. The
+  gap quoted beside your rank is to the person immediately ahead rather than to
+  the leader.
 - **Journey.** A contribution heatmap over the whole plan, milestone badges for
   each canonical section (with a moment when you finish one), and running stats:
   minutes invested, chapters and books finished, average pace, projected finish.
@@ -50,6 +51,13 @@ first creates it and picks a duration of 1 to 13 whole months, and the schedule
 is rebuilt whenever that changes. After that there is nothing to join and no
 code to pass around: signing in puts you in it.
 
+Because signing in is the only door, registration is the only lock. Set
+`SIGNUP_SECRET` and new accounts need that one shared word; existing people
+never see it again. Leave it unset locally, where there is nothing to protect.
+
+The creator can remove someone, which takes their reading and their notes with
+them and stops them signing back in.
+
 Only the creator can change plan settings, and can hand edit rights to specific
 people individually. Everyone can see who else is reading.
 
@@ -63,6 +71,14 @@ same schedule shifted to their own start.
 Progress is stored per chapter, not per day. Days are slices of a schedule that
 moves when the plan length changes; chapters are not. It is also what lets a
 half-finished morning be four chapters of six rather than a lie or nothing.
+
+## Scale
+
+The whole app used to travel as one payload, which was right for two readers and
+wrong for twelve: everyone's individual chapter ticks came to 14,268 rows and
+close to a megabyte on a finished plan, re-sent on every tap because mutations
+return the state. Your own ticks travel now; everyone else arrives as a computed
+standing. Twelve people a third of the way through a year is 44 KB.
 
 ## Stack
 
@@ -126,6 +142,7 @@ the committed table ever drifts from the model.
 | `VAPID_PRIVATE_KEY` | Web push |
 | `VAPID_SUBJECT` | Web push contact, `mailto:` |
 | `CRON_SECRET` | Guards `/api/cron/tick` |
+| `SIGNUP_SECRET` | The shared word needed to register. Unset means anyone can |
 | `ESV_API_KEY` | Optional. Shows the verse of the day's text inline |
 
 The 1,189 chapter weights seed themselves into `chapter_weights` on boot, so a

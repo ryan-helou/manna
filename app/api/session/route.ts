@@ -15,10 +15,12 @@ export async function POST(req: Request) {
     username?: unknown;
     password?: unknown;
     mode?: unknown;
+    invite?: unknown;
   };
   const username = typeof body.username === "string" ? normalizeUsername(body.username) : "";
   const password = typeof body.password === "string" ? body.password : "";
   const mode = body.mode === "register" ? "register" : "signin";
+  const invite = typeof body.invite === "string" ? body.invite.trim() : "";
 
   if (!isUsername(username)) {
     return NextResponse.json(
@@ -37,6 +39,18 @@ export async function POST(req: Request) {
   }
 
   if (mode === "register") {
+    // Signing in is all it takes to be in the plan, which means registration is
+    // the only door. Without this, anyone who found the URL would land in the
+    // group, read its notes and appear on its board. One shared word, typed
+    // once, keeps that from being true. Unset in local dev, where there is
+    // nothing to protect.
+    const expected = process.env.SIGNUP_SECRET;
+    if (expected && invite !== expected) {
+      return NextResponse.json(
+        { error: "That is not the right invite word." },
+        { status: 403 },
+      );
+    }
     const taken = await getStore().findUserByUsername(username);
     if (taken) {
       return NextResponse.json({ error: "That username is taken." }, { status: 409 });

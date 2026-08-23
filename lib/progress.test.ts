@@ -1,7 +1,7 @@
 import {
   chaptersForDay, currentDay, dateOfDay, dayComplete, dayProgress,
   longestStreakFor, milestonesFor, minutesForDay, paceFor, planEnded,
-  scheduleFromCuts, standings, statsFor, streakFor, totalDays, verseOfTheDay,
+  computeStandings, scheduleFromCuts, statsFor, streakFor, totalDays, verseOfTheDay,
 } from "./progress";
 import { partition } from "./schedule";
 import { allChapters, refKey, TOTAL_CHAPTERS } from "./bible";
@@ -54,6 +54,7 @@ function plan(
     })),
     cuts: partition(weights, DAYS),
     reads,
+    standings: [],
     notes: [],
   };
 }
@@ -221,13 +222,18 @@ console.log("\nhead to head");
     ...days("me", [1,2,3,4,5,6,7,8], (d) => addDays(START, d - 1)),
     ...days("friend", [1,2,3], (d) => addDays(START, d - 1)),
   ]);
-  const board = standings(p, today);
+  const board = computeStandings(p, p.reads, today);
   check("both readers appear", board.length, 2);
   check("further along leads", board[0].userId, "me");
   check("leader's day count", board[0].daysDone, 8);
   check("trailer's day count", board[1].daysDone, 3);
   ok("leader has more minutes", board[0].minutes > board[1].minutes);
-  check("trailer is behind", board[1].pace.status, "behind");
+  check("trailer is behind", board[1].status, "behind");
+  check("leader has read today", board[0].readToday, false);
+  // The board is built from everyone's reads, but only your own travel to the
+  // client. A member with no reads in the payload must still be reported.
+  const sparse = computeStandings({ ...p, members: p.members }, [], today);
+  check("nobody read, nobody ranked above zero", sparse.map((s) => s.daysDone), [0, 0]);
 }
 
 console.log("\nprogress survives a change of plan length");
