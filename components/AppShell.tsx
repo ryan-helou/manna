@@ -155,6 +155,7 @@ export function AppShell({
             plan={plan}
             me={state.me}
             verse={state.verse}
+            quiz={state.quiz}
             today={refDay}
             busy={busy}
             onToggleDay={(day, done) =>

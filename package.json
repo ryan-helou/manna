@@ -11,7 +11,7 @@
     "start": "next start -H 0.0.0.0",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx lib/schedule.test.ts && tsx lib/progress.test.ts && tsx lib/weights.test.ts",
+    "test": "tsx lib/schedule.test.ts && tsx lib/progress.test.ts && tsx lib/weights.test.ts && tsx lib/quiz.test.ts",
     "icons": "node scripts/gen-icons.mjs",
     "seed": "tsx scripts/seed.ts"
   },

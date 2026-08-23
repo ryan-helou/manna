@@ -7,7 +7,8 @@ import { allChapters } from "./bible";
 import { weightOf } from "./weights";
 import { planLengthDays } from "./dates";
 import { pushConfigured } from "./push";
-import { currentDay, verseOfTheDay } from "./progress";
+import { chaptersForDay, currentDay, verseOfTheDay } from "./progress";
+import { quizForDay } from "./quiz";
 import { fetchVerseText } from "./verse-text";
 import { today } from "./dates";
 import type { ActivePlan, AppState } from "./types";
@@ -43,7 +44,7 @@ export async function readState(): Promise<AppState> {
   const store = getStore();
   const me = await currentUser();
   if (!me) {
-    return { me: null, plans: [], active: null, verse: null, push: { configured: pushConfigured() } };
+    return { me: null, plans: [], active: null, verse: null, quiz: [], push: { configured: pushConfigured() } };
   }
 
   const plans = await store.listPlansFor(me.id);
@@ -54,6 +55,7 @@ export async function readState(): Promise<AppState> {
 
   let active: ActivePlan | null = null;
   let verse: AppState["verse"] = null;
+  let quiz: AppState["quiz"] = [];
   if (chosen) {
     const [plan, members, reads, notes] = await Promise.all([
       store.getPlan(chosen.id),
@@ -77,7 +79,9 @@ export async function readState(): Promise<AppState> {
         reads,
         notes,
       };
-      const pick = verseOfTheDay(active, currentDay(active, today(), me.id));
+      const day = currentDay(active, today(), me.id);
+      quiz = quizForDay(active.id, day, chaptersForDay(active, day));
+      const pick = verseOfTheDay(active, day);
       if (pick) {
         verse = {
           book: pick.ref.book,
@@ -89,5 +93,5 @@ export async function readState(): Promise<AppState> {
     }
   }
 
-  return { me, plans, active, verse, push: { configured: pushConfigured() } };
+  return { me, plans, active, verse, quiz, push: { configured: pushConfigured() } };
 }

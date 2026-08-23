@@ -80,11 +80,26 @@ export interface VerseOfDay {
   text: string | null;
 }
 
+/** One of the day's two or three questions. */
+export interface QuizQuestion {
+  id: string;
+  prompt: string;
+  options: string[];
+  answer: number;
+  note?: string;
+}
+
 export interface AppState {
   me: User | null;
   plans: PlanSummary[];
   active: ActivePlan | null;
   verse: VerseOfDay | null;
+  /**
+   * Today's questions. Generated server side: the name index they are built
+   * from is 146 KB, which has no business in a phone's bundle, so the quiz
+   * covers today only rather than any day you can navigate to.
+   */
+  quiz: QuizQuestion[];
   push: { configured: boolean };
 }
 

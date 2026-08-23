@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Glyph } from "./Glyph";
+import { DailyQuiz } from "./DailyQuiz";
 import { chapterUrl, formatRefs, type Ref } from "@/lib/bible";
 import { formatDayRelative, formatLongDay, timeAgo, type DayKey } from "@/lib/dates";
 import {
@@ -9,13 +10,14 @@ import {
   planEnded, startDayFor, streakFor, totalDays, verseOfTheDay,
 } from "@/lib/progress";
 import { MAX_NOTE_LENGTH } from "@/lib/types";
-import type { ActivePlan, User, VerseOfDay } from "@/lib/types";
+import type { ActivePlan, QuizQuestion, User, VerseOfDay } from "@/lib/types";
 import { formatMinutes } from "@/lib/dates";
 
 export function TodayTab({
   plan,
   me,
   verse,
+  quiz,
   today,
   busy,
   onToggleDay,
@@ -26,6 +28,7 @@ export function TodayTab({
   plan: ActivePlan;
   me: User;
   verse: VerseOfDay | null;
+  quiz: QuizQuestion[];
   today: DayKey;
   busy: boolean;
   onToggleDay: (day: number, done: boolean) => void;
@@ -242,6 +245,9 @@ export function TodayTab({
           </a>
         </section>
       )}
+
+      {/* ---- the daily check, today only ---- */}
+      {isToday && <DailyQuiz questions={quiz} planId={plan.id} day={day} />}
 
       {/* ---- shared notes ---- */}
       <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "180ms" }}>

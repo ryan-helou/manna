@@ -38,6 +38,8 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
   everyone can read. Flat, no threads.
 - **Verse of the day.** The strongest verse of today's chapters, scored on
   whether it stands on its own, and the same for everyone reading that day.
+- **A daily check.** Two or three multiple choice questions on what you just
+  read, marked on the spot.
 - **Evening reminder.** A web push if today is still unticked.
 
 ## Plans
@@ -90,6 +92,8 @@ Three suites, plain `.test.ts` files run with `tsx`, no framework:
 - `lib/weights.test.ts` - the committed weight table is exactly what the model
   produces, plus the sanity checks: genealogies cheap, epistles dear, Romans
   above Chronicles per word.
+- `lib/quiz.test.ts` - checks all 917 of a year's questions against the same
+  text they were built from, so none of them can be wrong about the Bible.
 - `lib/progress.test.ts` - pace, streaks, stats, milestones, partial days, late
   joiners and the verse of the day. Includes a regression test for the bug that
   day-keyed progress caused: switching a twelve month plan to three used to
@@ -98,12 +102,14 @@ Three suites, plain `.test.ts` files run with `tsx`, no framework:
 ## Regenerating the weights
 
 ```bash
-node scripts/score-verses.mjs      # rescore verses, writes data/chapter-verses.json
+node scripts/score-verses.mjs      # rescore verses  -> data/chapter-verses.json
+node scripts/extract-names.mjs     # names for the quiz -> data/chapter-names.json
 npx tsx scripts/gen-weights.ts     # rebuild the generated tables
 ```
 
 Reads `data/chapter-signals.json` through the model in `lib/weighting.ts` and
-rewrites `lib/weights.ts`, `lib/verses.ts` and `lib/verse-picks.ts`. `lib/weights.test.ts` will fail if
+rewrites `lib/weights.ts`, `lib/verses.ts`, `lib/verse-picks.ts` and
+`lib/chapter-names.ts`. `lib/weights.test.ts` will fail if
 the committed table ever drifts from the model.
 
 ## Environment
