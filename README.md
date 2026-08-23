@@ -23,19 +23,21 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
 
 ## What it does
 
-- **Today.** The exact chapters, how long they should take, and a tap through to
-  each one in the ESV or the NKJV. Tick it off when you are done.
+- **Today.** The exact chapters, with a tap through to each one in the ESV. Tick
+  them off one at a time or the whole day at once, and step backward and forward
+  through the plan to catch up or read ahead.
 - **Pace.** Ahead, behind or level, with the gap measured in the reading you
   actually missed rather than in days.
 - **Streaks.** Consecutive days logged. The day rolls over at 3 AM, not midnight.
 - **Together.** You against whoever else is in the plan, framed to make the
   person behind want to catch up.
 - **Journey.** A contribution heatmap over the whole plan, milestone badges for
-  each canonical section, and running stats: minutes invested, chapters and
-  books finished, average pace, projected finish.
+  each canonical section (with a moment when you finish one), and running stats:
+  minutes invested, chapters and books finished, average pace, projected finish.
 - **Notes.** A shared field on each day's reading. Anyone in the plan can write,
   everyone can read. Flat, no threads.
-- **Verse of the day.** Drawn from today's chapters, the same for everyone.
+- **Verse of the day.** The strongest verse of today's chapters, scored on
+  whether it stands on its own, and the same for everyone reading that day.
 - **Evening reminder.** A web push if today is still unticked.
 
 ## Plans
@@ -47,6 +49,14 @@ misread stripped out: no O or 0, no 1, I or L. Case does not matter on entry.
 
 Only the creator can change plan settings, and can hand edit rights to specific
 people individually. Everyone can see the full participant list.
+
+Each reader carries their own day one. Someone handed the code a month in starts
+at Genesis on pace rather than opening the app thirty days behind, reading the
+same schedule shifted to their own start.
+
+Progress is stored per chapter, not per day. Days are slices of a schedule that
+moves when the plan length changes; chapters are not. It is also what lets a
+half-finished morning be four chapters of six rather than a lie or nothing.
 
 ## Stack
 
@@ -80,17 +90,20 @@ Three suites, plain `.test.ts` files run with `tsx`, no framework:
 - `lib/weights.test.ts` - the committed weight table is exactly what the model
   produces, plus the sanity checks: genealogies cheap, epistles dear, Romans
   above Chronicles per word.
-- `lib/progress.test.ts` - pace, streaks, stats, milestones and the verse of the
-  day.
+- `lib/progress.test.ts` - pace, streaks, stats, milestones, partial days, late
+  joiners and the verse of the day. Includes a regression test for the bug that
+  day-keyed progress caused: switching a twelve month plan to three used to
+  credit 496 chapters that were never opened.
 
 ## Regenerating the weights
 
 ```bash
-npx tsx scripts/gen-weights.ts
+node scripts/score-verses.mjs      # rescore verses, writes data/chapter-verses.json
+npx tsx scripts/gen-weights.ts     # rebuild the generated tables
 ```
 
 Reads `data/chapter-signals.json` through the model in `lib/weighting.ts` and
-rewrites `lib/weights.ts` and `lib/verses.ts`. `lib/weights.test.ts` will fail if
+rewrites `lib/weights.ts`, `lib/verses.ts` and `lib/verse-picks.ts`. `lib/weights.test.ts` will fail if
 the committed table ever drifts from the model.
 
 ## Environment
