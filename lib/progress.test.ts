@@ -45,7 +45,7 @@ function plan(
 ): ActivePlan {
   const weights = allChapters().map((c) => weightOf(c.book, c.chapter));
   return {
-    id: "p1", name: "Manna", joinCode: "K7RM", months: MONTHS, startDay: START,
+    id: "p1", name: "Manna", months: MONTHS, startDay: START,
     translation: "ESV", creatorId: "me", canEdit: true,
     members: members.map((id, i) => ({
       id, username: id, displayName: id === "me" ? "Ryan" : "Sam",

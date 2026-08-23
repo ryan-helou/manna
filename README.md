@@ -29,8 +29,9 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
 - **Pace.** Ahead, behind or level, with the gap measured in the reading you
   actually missed rather than in days.
 - **Streaks.** Consecutive days logged. The day rolls over at 3 AM, not midnight.
-- **Together.** You against whoever else is in the plan, framed to make the
-  person behind want to catch up.
+- **Together.** The whole group, ordered by how far through they are, with who
+  has read today at a glance. The gap quoted beside your rank is to the person
+  immediately ahead rather than to the leader.
 - **Journey.** A contribution heatmap over the whole plan, milestone badges for
   each canonical section (with a moment when you finish one), and running stats:
   minutes invested, chapters and books finished, average pace, projected finish.
@@ -38,19 +39,22 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
   everyone can read. Flat, no threads.
 - **Verse of the day.** The strongest verse of today's chapters, scored on
   whether it stands on its own, and the same for everyone reading that day.
-- **A daily check.** Two or three multiple choice questions on what you just
-  read, marked on the spot.
+- **A daily check.** Five multiple choice questions on what you just read,
+  marked on the spot.
 - **Evening reminder.** A web push if today is still unticked.
 
-## Plans
+## The plan
 
-A plan covers the entire Bible; the only variable is pace. The creator picks a
-duration of 1 to 13 whole months, and the schedule is rebuilt whenever that
-changes. Joining is a four character code, uppercase, with the shapes that get
-misread stripped out: no O or 0, no 1, I or L. Case does not matter on entry.
+One plan, covering the entire Bible; the only variable is pace. Whoever signs in
+first creates it and picks a duration of 1 to 13 whole months, and the schedule
+is rebuilt whenever that changes. After that there is nothing to join and no
+code to pass around: signing in puts you in it.
 
 Only the creator can change plan settings, and can hand edit rights to specific
-people individually. Everyone can see the full participant list.
+people individually. Everyone can see who else is reading.
+
+Anyone can change their own display name, username and password from settings.
+Changing a password needs the old one, even while signed in.
 
 Each reader carries their own day one. Someone handed the code a month in starts
 at Genesis on pace rather than opening the app thirty days behind, reading the
@@ -92,7 +96,7 @@ Three suites, plain `.test.ts` files run with `tsx`, no framework:
 - `lib/weights.test.ts` - the committed weight table is exactly what the model
   produces, plus the sanity checks: genealogies cheap, epistles dear, Romans
   above Chronicles per word.
-- `lib/quiz.test.ts` - checks all 917 of a year's questions against the same
+- `lib/quiz.test.ts` - checks all 1,800 of a year's questions against the same
   text they were built from, so none of them can be wrong about the Bible.
 - `lib/progress.test.ts` - pace, streaks, stats, milestones, partial days, late
   joiners and the verse of the day. Includes a regression test for the bug that

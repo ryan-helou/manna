@@ -76,6 +76,21 @@ export async function signIn(username: string, password: string): Promise<User |
   return { id: found.id, username: found.username, displayName: found.displayName };
 }
 
+/** Swap a password, but only for someone who can produce the old one. */
+export async function changePassword(
+  userId: string,
+  current: string,
+  next: string,
+): Promise<boolean> {
+  const store = getStore();
+  const me = await store.getUser(userId);
+  if (!me) return false;
+  const full = await store.findUserByUsername(me.username);
+  if (!full || !(await checkPassword(full.passwordHash, current))) return false;
+  await store.setPasswordHash(userId, await hashPassword(next));
+  return true;
+}
+
 export async function signOut(): Promise<void> {
   const jar = await cookies();
   jar.delete(COOKIE);

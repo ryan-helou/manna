@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStore } from "@/lib/db";
-import { currentUser, register, signIn, signOut } from "@/lib/session";
+import { changePassword, currentUser, register, signIn, signOut } from "@/lib/session";
 import { readState } from "@/lib/state";
 import { isUsername, normalizeUsername, MAX_NAME_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/types";
 
@@ -64,17 +64,66 @@ export async function PATCH(req: Request) {
   const me = await currentUser();
   if (!me) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { displayName?: unknown };
-  if (typeof body.displayName === "string") {
-    const name = body.displayName.trim();
+  const body = (await req.json().catch(() => ({}))) as {
+    displayName?: unknown;
+    username?: unknown;
+    currentPassword?: unknown;
+    newPassword?: unknown;
+  };
+  const store = getStore();
+
+  if (body.displayName !== undefined) {
+    const name = typeof body.displayName === "string" ? body.displayName.trim() : "";
     if (!name || name.length > MAX_NAME_LENGTH) {
       return NextResponse.json(
         { error: `Pick a name between 1 and ${MAX_NAME_LENGTH} characters.` },
         { status: 400 },
       );
     }
-    await getStore().setDisplayName(me.id, name);
+    await store.setDisplayName(me.id, name);
   }
+
+  if (body.username !== undefined) {
+    const username = typeof body.username === "string" ? normalizeUsername(body.username) : "";
+    if (!isUsername(username)) {
+      return NextResponse.json(
+        { error: "Usernames are 2 to 30 characters: letters, numbers, dots, dashes, underscores." },
+        { status: 400 },
+      );
+    }
+    if (username.toLowerCase() !== me.username.toLowerCase()) {
+      const taken = await store.findUserByUsername(username);
+      if (taken) return NextResponse.json({ error: "That username is taken." }, { status: 409 });
+      try {
+        await store.setUsername(me.id, username);
+      } catch (err) {
+        if ((err as { code?: string }).code === "23505") {
+          return NextResponse.json({ error: "That username is taken." }, { status: 409 });
+        }
+        throw err;
+      }
+    }
+  }
+
+  if (body.newPassword !== undefined) {
+    const next = typeof body.newPassword === "string" ? body.newPassword : "";
+    const current = typeof body.currentPassword === "string" ? body.currentPassword : "";
+    if (next.length < MIN_PASSWORD_LENGTH) {
+      return NextResponse.json(
+        { error: `Passwords need at least ${MIN_PASSWORD_LENGTH} characters.` },
+        { status: 400 },
+      );
+    }
+    if (next.length > 200) {
+      return NextResponse.json({ error: "That password is too long." }, { status: 400 });
+    }
+    // The current password is required even though they are already signed in:
+    // a borrowed unlocked phone should not be able to lock the owner out.
+    if (!(await changePassword(me.id, current, next))) {
+      return NextResponse.json({ error: "That is not your current password." }, { status: 403 });
+    }
+  }
+
   return NextResponse.json(await readState());
 }
 

@@ -121,11 +121,7 @@ export function AppShell({
 
   if (!state.active) {
     return (
-      <Onboarding
-        busy={busy}
-        onCreate={(name, months) => post("/api/plans", { name, months })}
-        onJoin={(code) => post("/api/plans/join", { code })}
-      />
+      <Onboarding busy={busy} onCreate={(name, months) => post("/api/plans", { name, months })} />
     );
   }
 
@@ -142,7 +138,7 @@ export function AppShell({
         />
         <button
           onClick={() => setSettingsOpen(true)}
-          aria-label="Plan settings"
+          aria-label="Settings"
           className="rounded-full p-2 text-ink-2 transition hover:bg-page-2 hover:text-ink"
         >
           <Glyph name="settings" className="h-5 w-5" />
@@ -216,6 +212,9 @@ export function AppShell({
           onSavePlan={(patch: { name?: string; months?: number }) =>
             send(`/api/plans/${plan.id}`, { method: "PATCH", body: JSON.stringify(patch) })
           }
+          onSaveProfile={(patch) =>
+            send("/api/session", { method: "PATCH", body: JSON.stringify(patch) })
+          }
           onToggleEdit={(userId, canEdit) =>
             void send(`/api/plans/${plan.id}/members`, {
               method: "PATCH",
@@ -239,7 +238,7 @@ function PlanSwitcher({
   activeId,
   onSelect,
 }: {
-  plans: { id: string; name: string; joinCode: string }[];
+  plans: { id: string; name: string }[];
   activeId: string;
   onSelect: (planId: string) => void;
 }) {

@@ -47,7 +47,17 @@ export async function readState(): Promise<AppState> {
     return { me: null, plans: [], active: null, verse: null, quiz: [], push: { configured: pushConfigured() } };
   }
 
-  const plans = await store.listPlansFor(me.id);
+  // Everyone reads the same plan. There is no code to hand round: signing in
+  // puts you in it, and if it already started you begin at day one on your own
+  // clock rather than however far along everyone else is.
+  let plans = await store.listPlansFor(me.id);
+  if (plans.length === 0) {
+    const shared = await store.getSharedPlan();
+    if (shared) {
+      await store.addMember(shared.id, me.id, false, today());
+      plans = await store.listPlansFor(me.id);
+    }
+  }
   const jar = await cookies();
   const wanted = jar.get(ACTIVE_COOKIE)?.value;
   // Fall back to the first plan when the cookie points at one they have left.
@@ -68,7 +78,6 @@ export async function readState(): Promise<AppState> {
       active = {
         id: plan.id,
         name: plan.name,
-        joinCode: plan.joinCode,
         months: plan.months,
         startDay: plan.startDay,
         translation: plan.translation,

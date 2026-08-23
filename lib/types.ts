@@ -12,7 +12,6 @@ export interface User {
 export interface PlanSummary {
   id: string;
   name: string;
-  joinCode: string;
 }
 
 export interface Member extends User {
@@ -54,7 +53,6 @@ export interface Note {
 export interface ActivePlan {
   id: string;
   name: string;
-  joinCode: string;
   months: number;
   startDay: DayKey;
   translation: TranslationId;
@@ -108,33 +106,6 @@ export const MAX_MONTHS = 13;
 
 export function isMonths(v: unknown): v is number {
   return Number.isInteger(v) && (v as number) >= MIN_MONTHS && (v as number) <= MAX_MONTHS;
-}
-
-/**
- * Join codes are four characters, uppercase, with the shapes that get misread
- * out loud or in a screenshot removed: no O or 0, no 1, I or L.
- */
-export const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-export const CODE_LENGTH = 4;
-
-export function normalizeCode(raw: string): string {
-  return raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
-
-export function isJoinCode(raw: string): boolean {
-  const code = normalizeCode(raw);
-  return (
-    code.length === CODE_LENGTH &&
-    [...code].every((ch) => CODE_ALPHABET.includes(ch))
-  );
-}
-
-export function randomCode(): string {
-  let out = "";
-  for (let i = 0; i < CODE_LENGTH; i++) {
-    out += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
-  }
-  return out;
 }
 
 export const MAX_NOTE_LENGTH = 2000;

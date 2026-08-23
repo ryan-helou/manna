@@ -77,19 +77,19 @@ console.log("\nthe marked answer is the true one");
       const right = q.options[q.answer];
       const others = q.options.filter((_, j) => j !== q.answer);
 
-      if (q.id.endsWith("appears")) {
+      if (q.id.includes("appears")) {
         // The answer must be in today's reading, and nothing else may be.
         if (!todayNames.has(right)) wrong.push(`day ${day} appears: ${right} is not in today`);
         for (const o of others) {
           if (todayNames.has(o)) wrong.push(`day ${day} appears: ${o} IS in today`);
         }
-      } else if (q.id.endsWith("absent")) {
+      } else if (q.id.includes("absent")) {
         // The answer must be absent, and every other option present.
         if (todayNames.has(right)) wrong.push(`day ${day} absent: ${right} IS in today`);
         for (const o of others) {
           if (!todayNames.has(o)) wrong.push(`day ${day} absent: ${o} is not in today either`);
         }
-      } else if (q.id.endsWith("order")) {
+      } else if (q.id.includes("order")) {
         // The answer must genuinely be the earliest, judged by first appearance.
         const firstAt = (name: string) => refs.findIndex((r) => namesIn(r).includes(name));
         const rightAt = firstAt(right);
@@ -98,7 +98,7 @@ console.log("\nthe marked answer is the true one");
           if (at < 0) wrong.push(`day ${day} order: ${o} is not in today`);
           else if (at <= rightAt) wrong.push(`day ${day} order: ${o} (${at}) is not after ${right} (${rightAt})`);
         }
-      } else if (q.id.endsWith("locate")) {
+      } else if (q.id.includes("locate")) {
         // The named person belongs to the answer's chapter and no other.
         const name = q.prompt.replace(/^Which of today's chapters mentions /, "").replace(/\?$/, "");
         const home = refs.find((r) => `${r.book} ${r.chapter}` === right);
@@ -108,6 +108,19 @@ console.log("\nthe marked answer is the true one");
         for (const o of others) {
           const ref = refs.find((r) => `${r.book} ${r.chapter}` === o);
           if (ref && namesIn(ref).includes(name)) wrong.push(`day ${day} locate: ${name} is also in ${o}`);
+        }
+      } else if (q.id.includes("notread")) {
+        // The stray was not read; every other option was.
+        if (todayKeys.has(right)) wrong.push(`day ${day} notread: ${right} WAS read today`);
+        for (const o of others) {
+          if (!todayKeys.has(o)) wrong.push(`day ${day} notread: ${o} was not read either`);
+        }
+      } else if (q.id.endsWith("book")) {
+        // The answer is a book read today; no other option is.
+        const mine = new Set(refs.map((r) => r.book));
+        if (!mine.has(right)) wrong.push(`day ${day} book: ${right} was not read today`);
+        for (const o of others) {
+          if (mine.has(o)) wrong.push(`day ${day} book: ${o} WAS read today`);
         }
       } else if (q.id.includes("which")) {
         // The answer is one of today's chapters; no other option is.
@@ -159,23 +172,26 @@ console.log("\nthere is always something to ask");
   for (const months of [1, 3, 6, 12, 13]) {
     const days = daysOf(months);
     const counts = days.map((refs, i) => quizForDay("p1", i + 1, refs).length);
-    const empty = counts.filter((c) => c === 0).length;
-    const thin = counts.filter((c) => c === 1).length;
-    check(`${months}mo: no day is left with nothing`, empty, 0);
+    const thin = counts.filter((c) => c < 2).length;
+    const full = counts.filter((c) => c === 5).length;
+    check(`${months}mo: every day asks something`, counts.filter((c) => c === 0).length, 0);
+    check(`${months}mo: no day is left with a single question`, thin, 0);
     ok(
-      `${months}mo: at least 2 questions on 98% of days`,
-      (days.length - thin) / days.length >= 0.98,
-      `${thin} of ${days.length} days have only one`,
+      `${months}mo: a full five on 90% of days`,
+      full / days.length >= 0.9,
+      `only ${full} of ${days.length}`,
     );
-    ok(`${months}mo: never more than 3`, counts.every((c) => c <= 3));
+    ok(`${months}mo: never more than five`, counts.every((c) => c <= 5));
   }
 }
 
 console.log("\nedges");
 {
   check("no chapters means no questions", quizForDay("p1", 1, []), []);
+  // Psalm 119: one chapter, no names in it at all. The plainest templates are
+  // what stand between it and an empty card.
   const one = quizForDay("p1", 1, [{ book: "Psalms", chapter: 119 }]);
-  ok("a lone chapter still gets asked something", one.length >= 1, `${one.length}`);
+  ok("even a lone nameless chapter is asked about", one.length >= 2, `${one.length}`);
 }
 
 console.log(failures === 0 ? "\nall quiz checks passed\n" : `\n${failures} FAILED\n`);

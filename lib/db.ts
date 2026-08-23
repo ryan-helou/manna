@@ -1,7 +1,7 @@
 import type { Pool as PgPool } from "pg";
 import { DEFAULT_TRANSLATION, isTranslation, type TranslationId } from "./bible";
 import { CHAPTER_WEIGHTS } from "./weights";
-import { randomCode, type ChapterRead, type Member, type Note, type PlanSummary, type User } from "./types";
+import type { ChapterRead, Member, Note, PlanSummary, User } from "./types";
 import type { DayKey } from "./dates";
 
 /**
@@ -21,7 +21,6 @@ export interface NewPlan {
 export interface PlanRow {
   id: string;
   name: string;
-  joinCode: string;
   months: number;
   startDay: DayKey;
   translation: TranslationId;
@@ -55,11 +54,14 @@ export interface Store {
   getUser(id: string): Promise<User | null>;
   findUserByUsername(username: string): Promise<(User & { passwordHash: string }) | null>;
   setDisplayName(userId: string, displayName: string): Promise<void>;
+  setUsername(userId: string, username: string): Promise<void>;
+  setPasswordHash(userId: string, hash: string): Promise<void>;
 
   // Plans
   createPlan(input: NewPlan): Promise<PlanRow>;
   getPlan(id: string): Promise<PlanRow | null>;
-  getPlanByCode(code: string): Promise<PlanRow | null>;
+  /** The plan everyone shares. Signing in puts you in it. */
+  getSharedPlan(): Promise<PlanRow | null>;
   updatePlan(id: string, patch: PlanPatch): Promise<PlanRow | null>;
   listPlansFor(userId: string): Promise<PlanSummary[]>;
   /** Every plan, for the scheduled nudge. */
@@ -118,7 +120,6 @@ const asTranslation = (v: unknown): TranslationId =>
 type PlanDbRow = {
   id: string;
   name: string;
-  join_code: string;
   months: number;
   start_day: string;
   translation: string;
@@ -129,7 +130,6 @@ type PlanDbRow = {
 const toPlan = (r: PlanDbRow): PlanRow => ({
   id: r.id,
   name: r.name,
-  joinCode: r.join_code,
   months: Number(r.months),
   startDay: r.start_day,
   translation: asTranslation(r.translation),
@@ -137,7 +137,7 @@ const toPlan = (r: PlanDbRow): PlanRow => ({
   createdAt: r.created_at,
 });
 
-const PLAN_COLS = `id, name, join_code, months, to_char(start_day, 'YYYY-MM-DD') AS start_day,
+const PLAN_COLS = `id, name, months, to_char(start_day, 'YYYY-MM-DD') AS start_day,
   translation, creator_id,
   to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at`;
 
@@ -165,7 +165,6 @@ class PgStore implements Store {
           CREATE TABLE IF NOT EXISTS plans (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
-            join_code TEXT UNIQUE NOT NULL,
             months INT NOT NULL,
             start_day DATE NOT NULL,
             translation TEXT NOT NULL DEFAULT 'ESV',
@@ -243,6 +242,8 @@ class PgStore implements Store {
             value TEXT NOT NULL,
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
           )`);
+        // Codes are gone: there is one plan and signing in puts you in it.
+        await this.pool.query(`ALTER TABLE plans DROP COLUMN IF EXISTS join_code`);
         await this.seedWeights();
       })();
     }
@@ -313,24 +314,27 @@ class PgStore implements Store {
     await this.pool.query(`UPDATE users SET display_name = $2 WHERE id = $1`, [userId, displayName]);
   }
 
+  async setUsername(userId: string, username: string): Promise<void> {
+    await this.init();
+    await this.pool.query(
+      `UPDATE users SET username = $2, username_lower = $3 WHERE id = $1`,
+      [userId, username, username.toLowerCase()],
+    );
+  }
+
+  async setPasswordHash(userId: string, hash: string): Promise<void> {
+    await this.init();
+    await this.pool.query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [userId, hash]);
+  }
+
   async createPlan(input: NewPlan): Promise<PlanRow> {
     await this.init();
-    // Four characters from a 31-letter alphabet is ~924k combinations; for a
-    // handful of plans a couple of retries on collision is plenty.
-    for (let attempt = 0; attempt < 12; attempt++) {
-      const code = randomCode();
-      try {
-        const r = await this.pool.query(
-          `INSERT INTO plans (id, name, join_code, months, start_day, translation, creator_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${PLAN_COLS}`,
-          [newId(), input.name, code, input.months, input.startDay, input.translation, input.creatorId],
-        );
-        return toPlan(r.rows[0]);
-      } catch (err) {
-        if ((err as { code?: string }).code !== "23505") throw err;
-      }
-    }
-    throw new Error("Could not allocate a join code");
+    const r = await this.pool.query(
+      `INSERT INTO plans (id, name, months, start_day, translation, creator_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${PLAN_COLS}`,
+      [newId(), input.name, input.months, input.startDay, input.translation, input.creatorId],
+    );
+    return toPlan(r.rows[0]);
   }
 
   async getPlan(id: string): Promise<PlanRow | null> {
@@ -339,10 +343,11 @@ class PgStore implements Store {
     return r.rows[0] ? toPlan(r.rows[0]) : null;
   }
 
-  async getPlanByCode(code: string): Promise<PlanRow | null> {
+  async getSharedPlan(): Promise<PlanRow | null> {
     await this.init();
+    // The first plan made is the one everybody reads.
     const r = await this.pool.query(
-      `SELECT ${PLAN_COLS} FROM plans WHERE join_code = $1`, [code.toUpperCase()],
+      `SELECT ${PLAN_COLS} FROM plans ORDER BY created_at LIMIT 1`,
     );
     return r.rows[0] ? toPlan(r.rows[0]) : null;
   }
@@ -366,12 +371,12 @@ class PgStore implements Store {
   async listPlansFor(userId: string): Promise<PlanSummary[]> {
     await this.init();
     const r = await this.pool.query(
-      `SELECT p.id, p.name, p.join_code FROM plans p
+      `SELECT p.id, p.name FROM plans p
        JOIN plan_members m ON m.plan_id = p.id
        WHERE m.user_id = $1 ORDER BY m.joined_at`,
       [userId],
     );
-    return r.rows.map((x) => ({ id: x.id, name: x.name, joinCode: x.join_code }));
+    return r.rows.map((x) => ({ id: x.id, name: x.name }));
   }
 
   async listAllPlans(): Promise<PlanRow[]> {
@@ -604,12 +609,26 @@ class MemoryStore implements Store {
     if (u) u.displayName = displayName;
   }
 
+  async setUsername(userId: string, username: string): Promise<void> {
+    const lower = username.toLowerCase();
+    if ([...this.users.values()].some((x) => x.usernameLower === lower && x.id !== userId)) {
+      const err = new Error("duplicate") as Error & { code?: string };
+      err.code = "23505";
+      throw err;
+    }
+    const u = this.users.get(userId);
+    if (u) { u.username = username; u.usernameLower = lower; }
+  }
+
+  async setPasswordHash(userId: string, hash: string): Promise<void> {
+    const u = this.users.get(userId);
+    if (u) u.passwordHash = hash;
+  }
+
   async createPlan(input: NewPlan): Promise<PlanRow> {
     await this.init();
-    let code = randomCode();
-    while ([...this.plans.values()].some((p) => p.joinCode === code)) code = randomCode();
     const plan: PlanRow = {
-      id: newId(), name: input.name, joinCode: code, months: input.months,
+      id: newId(), name: input.name, months: input.months,
       startDay: input.startDay, translation: input.translation,
       creatorId: input.creatorId, createdAt: new Date().toISOString(),
     };
@@ -619,9 +638,8 @@ class MemoryStore implements Store {
 
   async getPlan(id: string) { return this.plans.get(id) ?? null; }
 
-  async getPlanByCode(code: string) {
-    const up = code.toUpperCase();
-    return [...this.plans.values()].find((p) => p.joinCode === up) ?? null;
+  async getSharedPlan() {
+    return [...this.plans.values()][0] ?? null;
   }
 
   async updatePlan(id: string, patch: PlanPatch) {
@@ -638,10 +656,10 @@ class MemoryStore implements Store {
     for (const [planId, members] of this.members) {
       const m = members.get(userId);
       const p = this.plans.get(planId);
-      if (m && p) out.push({ id: p.id, name: p.name, joinCode: p.joinCode, joinedAt: m.joinedAt });
+      if (m && p) out.push({ id: p.id, name: p.name, joinedAt: m.joinedAt });
     }
     out.sort((a, b) => a.joinedAt.localeCompare(b.joinedAt));
-    return out.map(({ id, name, joinCode }) => ({ id, name, joinCode }));
+    return out.map(({ id, name }) => ({ id, name }));
   }
 
   async listAllPlans(): Promise<PlanRow[]> {

@@ -33,6 +33,8 @@ const SKIP = new Set([
   // Leading halves of place names the translation writes with a space:
   // Beth Shemesh, Bene Berak, Kibroth Hattaavah, Hazar Addar, En Gedi.
   "Beth","Bene","Kibroth","Hazar","Kiriath","Baal-","En","Abel-",
+  // Forms of address the translation capitalises: titles, not names.
+  "Sir","Sirs","Rabbi","Rabboni","Teacher","Master","Lady","King","Queen",
 ]);
 
 async function bookJson(file) {

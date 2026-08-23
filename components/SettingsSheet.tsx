@@ -16,6 +16,7 @@ export function SettingsSheet({
   busy,
   onClose,
   onSavePlan,
+  onSaveProfile,
   onToggleEdit,
   onSignOut,
 }: {
@@ -27,6 +28,12 @@ export function SettingsSheet({
   busy: boolean;
   onClose: () => void;
   onSavePlan: (patch: { name?: string; months?: number }) => Promise<string | null>;
+  onSaveProfile: (patch: {
+    displayName?: string;
+    username?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) => Promise<string | null>;
   onToggleEdit: (userId: string, canEdit: boolean) => void;
   onSignOut: () => void;
 }) {
@@ -34,7 +41,18 @@ export function SettingsSheet({
   const [months, setMonths] = useState(plan.months);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
+
+  const [displayName, setDisplayName] = useState(me.displayName);
+  const [username, setUsername] = useState(me.username);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const profileDirty = displayName !== me.displayName || username !== me.username;
+
+  const [pwOpen, setPwOpen] = useState(false);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSaved, setPwSaved] = useState(false);
 
   const isCreator = plan.creatorId === me.id;
   const dirty = name !== plan.name || months !== plan.months;
@@ -43,31 +61,120 @@ export function SettingsSheet({
     "mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-3 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none disabled:opacity-60";
 
   return (
-    <Sheet title="Plan settings" onClose={onClose}>
+    <Sheet title="Settings" onClose={onClose}>
       <div className="space-y-6">
-        {/* ---- join code ---- */}
+        {/* ---- you ---- */}
         <div>
-          <p className="eyebrow text-ink-2">Join code</p>
+          <p className="eyebrow flex items-center gap-1.5 text-ink-2">
+            <Glyph name="users" className="h-3.5 w-3.5" />
+            You
+          </p>
+
+          <label htmlFor="display-name" className="mt-3 block text-sm text-ink-2">
+            Display name
+          </label>
+          <input
+            id="display-name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            className={field}
+          />
+          <p className="mt-1.5 text-xs text-ink-3">What everyone else sees.</p>
+
+          <label htmlFor="username" className="mt-4 block text-sm text-ink-2">
+            Username
+          </label>
+          <input
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={field}
+          />
+          <p className="mt-1.5 text-xs text-ink-3">What you sign in with.</p>
+
+          {profileError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-warn">
+              {profileError}
+            </p>
+          )}
+          {profileDirty && (
+            <button
+              disabled={busy}
+              onClick={async () => {
+                const err = await onSaveProfile({ displayName, username });
+                setProfileError(err);
+                if (!err) {
+                  setProfileSaved(true);
+                  setTimeout(() => setProfileSaved(false), 1800);
+                }
+              }}
+              className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
+            >
+              Save
+            </button>
+          )}
+          {profileSaved && <p className="mt-2 text-sm font-medium text-good">Saved.</p>}
+
           <button
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(plan.joinCode);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1800);
-              } catch {
-                setCopied(false);
-              }
-            }}
-            className="mt-2 flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-page-2 px-4 py-3 transition hover:border-accent"
+            onClick={() => setPwOpen((v) => !v)}
+            aria-expanded={pwOpen}
+            className="mt-4 flex w-full items-center justify-between gap-2 rounded-xl border border-line px-4 py-3 text-sm font-semibold text-ink-2 transition hover:border-accent"
           >
-            <span className="stat text-2xl font-semibold tracking-[0.3em] text-accent">
-              {plan.joinCode}
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-ink-2">
-              {copied ? "Copied" : "Copy"}
-              <Glyph name="copy" className="h-4 w-4" />
+            Change password
+            <span className={`transition ${pwOpen ? "rotate-180" : ""}`}>
+              <Glyph name="chevron" className="h-4 w-4" />
             </span>
           </button>
+
+          {pwOpen && (
+            <div className="mt-3">
+              <input
+                type="password"
+                value={currentPw}
+                onChange={(e) => setCurrentPw(e.target.value)}
+                placeholder="Current password"
+                autoComplete="current-password"
+                className={field}
+              />
+              <input
+                type="password"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+                placeholder="New password"
+                autoComplete="new-password"
+                className={field}
+              />
+              {pwError && (
+                <p role="alert" className="mt-3 text-sm font-medium text-warn">
+                  {pwError}
+                </p>
+              )}
+              {pwSaved && <p className="mt-3 text-sm font-medium text-good">Password changed.</p>}
+              <button
+                disabled={busy || !currentPw || !newPw}
+                onClick={async () => {
+                  const err = await onSaveProfile({
+                    currentPassword: currentPw,
+                    newPassword: newPw,
+                  });
+                  setPwError(err);
+                  if (!err) {
+                    setCurrentPw("");
+                    setNewPw("");
+                    setPwOpen(false);
+                    setPwSaved(true);
+                    setTimeout(() => setPwSaved(false), 2200);
+                  }
+                }}
+                className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+              >
+                Update password
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ---- editable settings ---- */}
