@@ -55,10 +55,10 @@ export async function readState(): Promise<AppState> {
   let active: ActivePlan | null = null;
   let verse: AppState["verse"] = null;
   if (chosen) {
-    const [plan, members, completions, notes] = await Promise.all([
+    const [plan, members, reads, notes] = await Promise.all([
       store.getPlan(chosen.id),
       store.listMembers(chosen.id),
-      store.listCompletions(chosen.id),
+      store.listReads(chosen.id),
       store.listNotes(chosen.id),
     ]);
     if (plan) {
@@ -74,10 +74,10 @@ export async function readState(): Promise<AppState> {
         canEdit: !!mine?.canEdit,
         members,
         cuts: cutsFor(plan.startDay, plan.months),
-        completions,
+        reads,
         notes,
       };
-      const pick = verseOfTheDay(active, currentDay(active, today()));
+      const pick = verseOfTheDay(active, currentDay(active, today(), me.id));
       if (pick) {
         verse = {
           book: pick.ref.book,

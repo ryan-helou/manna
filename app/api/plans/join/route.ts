@@ -3,6 +3,7 @@ import { getStore } from "@/lib/db";
 import { currentUser } from "@/lib/session";
 import { readState, setActivePlan } from "@/lib/state";
 import { isJoinCode, normalizeCode } from "@/lib/types";
+import { today } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No plan with that code." }, { status: 404 });
   }
   // Joining twice is a no-op rather than an error: the code still works.
-  await store.addMember(plan.id, me.id, false);
+  // A late joiner starts at day 1 today rather than being dropped into the
+  // middle of the schedule already weeks behind.
+  await store.addMember(plan.id, me.id, false, today());
   await setActivePlan(plan.id);
   return NextResponse.json(await readState());
 }

@@ -47,26 +47,26 @@ export async function GET(req: Request) {
   for (const plan of plans) {
     const cuts = cutsFor(plan.startDay, plan.months);
     const days = cuts.length - 1;
-    // Which day of the plan today is. Skip plans not running yet or finished.
-    const elapsed =
-      Math.round(
-        (new Date(now).getTime() - new Date(plan.startDay).getTime()) / 86_400_000,
-      ) + 1;
-    if (elapsed < 1 || elapsed > days) continue;
 
-    const [members, completions] = await Promise.all([
+    const [members, reads] = await Promise.all([
       store.listMembers(plan.id),
-      store.listCompletions(plan.id),
+      store.listReads(plan.id),
     ]);
-    const doneToday = new Set(
-      completions.filter((c) => c.day === elapsed).map((c) => c.userId),
-    );
-    const refs = chapters.slice(cuts[elapsed - 1], cuts[elapsed]);
-    const minutes = refs.reduce((a, r) => a + weightOf(r.book, r.chapter), 0);
-    const reading = formatRefs(refs);
+    // Done means every chapter of the day, so a half-finished morning still
+    // gets the nudge.
+    const readKeys = new Set(reads.map((r) => `${r.userId}|${r.book} ${r.chapter}`));
 
     for (const m of members) {
-      if (doneToday.has(m.id)) continue;
+      // Readers keep their own day 1, so each is on their own day of the plan.
+      const elapsed =
+        Math.round((new Date(now).getTime() - new Date(m.startDay).getTime()) / 86_400_000) + 1;
+      if (elapsed < 1 || elapsed > days) continue;
+      const refs = chapters.slice(cuts[elapsed - 1], cuts[elapsed]);
+      const minutes = refs.reduce((a, r) => a + weightOf(r.book, r.chapter), 0);
+      const reading = formatRefs(refs);
+      const finishedToday = (userId: string) =>
+        refs.every((r) => readKeys.has(`${userId}|${r.book} ${r.chapter}`));
+      if (finishedToday(m.id)) continue;
       const marker = `evening:${plan.id}:${m.id}:${now}`;
       if (await store.getMeta(marker)) {
         skipped += 1;
@@ -74,7 +74,7 @@ export async function GET(req: Request) {
       }
       // Who else is already done, so the nudge carries the friendly pressure
       // that makes this work at all.
-      const others = members.filter((x) => x.id !== m.id && doneToday.has(x.id));
+      const others = members.filter((x) => x.id !== m.id && finishedToday(x.id));
       const tail =
         others.length === 1
           ? ` ${others[0].displayName} has already read.`

@@ -19,14 +19,27 @@ export interface Member extends User {
   canEdit: boolean;
   isCreator: boolean;
   joinedAt: string;
+  /**
+   * The calendar day this reader's day 1 falls on. The creator starts with the
+   * plan; anyone joining later starts the day they join, so nobody opens the
+   * app for the first time already a month behind.
+   */
+  startDay: DayKey;
 }
 
-export interface Completion {
+/**
+ * One chapter, read. Progress is stored per chapter rather than per day on
+ * purpose: a day is a slice of the schedule, and the schedule moves when the
+ * plan length changes. Chapters do not. Storing days meant that switching a
+ * twelve month plan to three would silently credit you with hundreds of
+ * chapters you had never opened.
+ */
+export interface ChapterRead {
   userId: string;
-  /** 1-based day number within the plan. */
-  day: number;
-  /** The calendar day it was ticked off, which is not always the day it was due. */
-  completedOn: DayKey;
+  book: string;
+  chapter: number;
+  /** The calendar day it was ticked, which is not always the day it was due. */
+  readOn: DayKey;
 }
 
 export interface Note {
@@ -55,7 +68,7 @@ export interface ActivePlan {
    * client already has the canon and the weights.
    */
   cuts: number[];
-  completions: Completion[];
+  reads: ChapterRead[];
   notes: Note[];
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Glyph } from "./Glyph";
-import { formatMinutes, type DayKey } from "@/lib/dates";
+import type { DayKey } from "@/lib/dates";
 import { currentDay, standings, totalDays } from "@/lib/progress";
 import type { ActivePlan, User } from "@/lib/types";
 
@@ -21,7 +21,7 @@ export function TogetherTab({
 }) {
   const board = standings(plan, today);
   const days = totalDays(plan);
-  const day = currentDay(plan, today);
+  const day = currentDay(plan, today, me.id);
   const mine = board.find((s) => s.userId === me.id);
   const leader = board[0];
   const gap = mine && leader ? leader.daysDone - mine.daysDone : 0;
@@ -96,7 +96,7 @@ export function TogetherTab({
                 </div>
 
                 <div className="mt-1.5 flex items-center gap-3 text-xs text-ink-3">
-                  <span className="tnum">{formatMinutes(s.minutes)} in</span>
+                  <span className="tnum">{s.chaptersRead} chapters</span>
                   {s.streak > 0 && (
                     <span className="flex items-center gap-1">
                       <Glyph name="flame" className="h-3 w-3" />

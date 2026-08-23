@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     translation: DEFAULT_TRANSLATION,
     creatorId: me.id,
   });
-  await store.addMember(plan.id, me.id, true);
+  await store.addMember(plan.id, me.id, true, plan.startDay);
   await setActivePlan(plan.id);
   return NextResponse.json(await readState());
 }

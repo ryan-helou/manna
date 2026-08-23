@@ -7,10 +7,13 @@ import { TodayTab } from "./TodayTab";
 import { TogetherTab } from "./TogetherTab";
 import { JourneyTab } from "./JourneyTab";
 import { SettingsSheet } from "./SettingsSheet";
+import { MilestoneCard } from "./MilestoneCard";
 import { Glyph, type GlyphName } from "./Glyph";
 import { useManna } from "./useManna";
 import { today as deviceToday, type DayKey } from "@/lib/dates";
+import { milestonesFor, type Milestone } from "@/lib/progress";
 import type { AppState } from "@/lib/types";
+import type { Ref } from "@/lib/bible";
 
 type Tab = "today" | "together" | "journey";
 type Theme = "system" | "light" | "dark";
@@ -32,6 +35,7 @@ export function AppShell({
   const [tab, setTab] = useState<Tab>("today");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>("system");
+  const [celebrating, setCelebrating] = useState<Milestone | null>(null);
 
   // Start from the server's day so the first client render matches the markup,
   // then hand over to the device's own calendar. A home-screen app is usually
@@ -56,6 +60,34 @@ export function AppShell({
       if (saved === "light" || saved === "dark") setTheme(saved);
     } catch {}
   }, []);
+
+  // Watch for a canonical section being finished and mark the moment once.
+  // localStorage keyed per reader per plan, so it needs no schema and cannot
+  // replay after a reload part-way through the animation.
+  const active = state.active;
+  const meId = state.me?.id;
+  useEffect(() => {
+    if (!active || !meId) return;
+    const earned = milestonesFor(active, meId).filter((m) => m.earned);
+    if (earned.length === 0) return;
+    const storeKey = `manna-milestones-${meId}-${active.id}`;
+    let seen: string[] = [];
+    try {
+      seen = JSON.parse(localStorage.getItem(storeKey) ?? "[]") as string[];
+    } catch {
+      seen = [];
+    }
+    const fresh = earned.filter((m) => !seen.includes(m.id));
+    if (fresh.length === 0) return;
+    // Marked as seen up front: a reload mid-animation should not replay it.
+    try {
+      localStorage.setItem(storeKey, JSON.stringify([...seen, ...fresh.map((m) => m.id)]));
+    } catch {}
+    // Show the largest one earned, so finishing the Old Testament does not get
+    // upstaged by the minor prophets landing in the same tick.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCelebrating(fresh[fresh.length - 1]);
+  }, [active, meId]);
 
   const applyTheme = useCallback((next: Theme) => {
     setTheme(next);
@@ -125,7 +157,17 @@ export function AppShell({
             verse={state.verse}
             today={refDay}
             busy={busy}
-            onToggle={(day, done) => void post("/api/readings", { planId: plan.id, day, done })}
+            onToggleDay={(day, done) =>
+              void post("/api/readings", { planId: plan.id, day, done })
+            }
+            onToggleChapter={(ref: Ref, done) =>
+              void post("/api/readings", {
+                planId: plan.id,
+                book: ref.book,
+                chapter: ref.chapter,
+                done,
+              })
+            }
             onAddNote={(day, body) => post("/api/notes", { planId: plan.id, day, body })}
             onDeleteNote={(id) =>
               void send(`/api/notes?planId=${encodeURIComponent(plan.id)}&id=${encodeURIComponent(id)}`, {
@@ -156,6 +198,10 @@ export function AppShell({
           ))}
         </div>
       </nav>
+
+      {celebrating && (
+        <MilestoneCard milestone={celebrating} onClose={() => setCelebrating(null)} />
+      )}
 
       {settingsOpen && (
         <SettingsSheet

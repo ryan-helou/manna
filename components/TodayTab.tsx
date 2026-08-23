@@ -5,8 +5,8 @@ import { Glyph } from "./Glyph";
 import { chapterUrl, formatRefs, type Ref } from "@/lib/bible";
 import { formatDayRelative, formatLongDay, timeAgo, type DayKey } from "@/lib/dates";
 import {
-  chaptersForDay, currentDay, dateOfDay, paceFor, planEnded, streakFor,
-  totalDays, verseOfTheDay,
+  chaptersForDay, currentDay, dateOfDay, dayProgress, isChapterRead, paceFor,
+  planEnded, startDayFor, streakFor, totalDays, verseOfTheDay,
 } from "@/lib/progress";
 import { MAX_NOTE_LENGTH } from "@/lib/types";
 import type { ActivePlan, User, VerseOfDay } from "@/lib/types";
@@ -18,7 +18,8 @@ export function TodayTab({
   verse,
   today,
   busy,
-  onToggle,
+  onToggleDay,
+  onToggleChapter,
   onAddNote,
   onDeleteNote,
 }: {
@@ -27,12 +28,13 @@ export function TodayTab({
   verse: VerseOfDay | null;
   today: DayKey;
   busy: boolean;
-  onToggle: (day: number, done: boolean) => void;
+  onToggleDay: (day: number, done: boolean) => void;
+  onToggleChapter: (ref: Ref, done: boolean) => void;
   onAddNote: (day: number, body: string) => Promise<string | null>;
   onDeleteNote: (id: string) => void;
 }) {
   const days = totalDays(plan);
-  const base = currentDay(plan, today);
+  const base = currentDay(plan, today, me.id);
 
   // Which day is on screen, held as an offset from today rather than as an
   // absolute day. When the clock rolls past 3 AM and `today` moves on, the view
@@ -55,8 +57,10 @@ export function TodayTab({
   const isPast = day < base;
   const pace = paceFor(plan, me.id, today);
   const streak = streakFor(plan, me.id, today);
-  const done = plan.completions.some((c) => c.userId === me.id && c.day === day);
-  const ended = planEnded(plan, today);
+  const progress = dayProgress(plan, me.id, day);
+  const done = progress.total > 0 && progress.done === progress.total;
+  const started = progress.done > 0 && !done;
+  const ended = planEnded(plan, today, me.id);
 
   const [noteDraft, setNoteDraft] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
@@ -87,7 +91,7 @@ export function TodayTab({
             <p className="eyebrow truncate text-ink-2">
               {ended && isToday
                 ? "The plan is finished"
-                : formatDayRelative(dateOfDay(plan, day), today)}
+                : formatDayRelative(dateOfDay(plan, day, me.id), today)}
             </p>
             <p className="stat mt-0.5 text-xs text-ink-3">
               Day {day} of {days}
@@ -118,21 +122,30 @@ export function TodayTab({
           {formatRefs(chapters)}
         </h1>
         <p className="mt-1.5 text-center text-sm text-ink-3">
-          {formatLongDay(dateOfDay(plan, day))}
+          {formatLongDay(dateOfDay(plan, day, me.id))}
           <span>
-            &nbsp;&middot;&nbsp;{chapters.length}{" "}
-            {chapters.length === 1 ? "chapter" : "chapters"}
+            &nbsp;&middot;&nbsp;
+            {started
+              ? `${progress.done} of ${progress.total} read`
+              : `${chapters.length} ${chapters.length === 1 ? "chapter" : "chapters"}`}
           </span>
         </p>
 
         <ul className="mt-4 space-y-1.5">
           {chapters.map((ref) => (
-            <ChapterRow key={`${ref.book}-${ref.chapter}`} refr={ref} plan={plan} />
+            <ChapterRow
+              key={`${ref.book}-${ref.chapter}`}
+              refr={ref}
+              plan={plan}
+              read={isChapterRead(plan, me.id, ref)}
+              busy={busy}
+              onToggle={(next) => onToggleChapter(ref, next)}
+            />
           ))}
         </ul>
 
         <button
-          onClick={() => onToggle(day, !done)}
+          onClick={() => onToggleDay(day, !done)}
           disabled={busy}
           className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-base font-semibold transition active:scale-[0.99] disabled:opacity-60 ${
             done ? "border border-good bg-transparent text-good" : "bg-accent text-page"
@@ -141,7 +154,15 @@ export function TodayTab({
           <span className={done ? "tick-in" : ""}>
             <Glyph name="check" className="h-5 w-5" />
           </span>
-          {done ? "Read" : isPast ? "Catch this one up" : isToday ? "Mark as read" : "Read ahead"}
+          {done
+            ? "Read"
+            : started
+              ? `Finish the last ${progress.total - progress.done}`
+              : isPast
+                ? "Catch this one up"
+                : isToday
+                  ? "Mark all as read"
+                  : "Read ahead"}
         </button>
       </section>
 
@@ -173,8 +194,8 @@ export function TodayTab({
           )}
         </div>
         <div className="mt-2 flex justify-between text-xs text-ink-3">
-          <span className="tnum">{formatLongDay(plan.startDay)}</span>
-          <span className="tnum">{formatLongDay(dateOfDay(plan, days))}</span>
+          <span className="tnum">{formatLongDay(startDayFor(plan, me.id))}</span>
+          <span className="tnum">{formatLongDay(dateOfDay(plan, days, me.id))}</span>
         </div>
       </section>
 
@@ -293,16 +314,53 @@ export function TodayTab({
   );
 }
 
-function ChapterRow({ refr, plan }: { refr: Ref; plan: ActivePlan }) {
+function ChapterRow({
+  refr,
+  plan,
+  read,
+  busy,
+  onToggle,
+}: {
+  refr: Ref;
+  plan: ActivePlan;
+  read: boolean;
+  busy: boolean;
+  onToggle: (next: boolean) => void;
+}) {
   return (
-    <li>
+    <li
+      className={`flex items-center gap-1 rounded-xl border bg-page-2 pr-2 transition ${
+        read ? "border-good/40" : "border-line"
+      }`}
+    >
+      <button
+        onClick={() => onToggle(!read)}
+        disabled={busy}
+        aria-pressed={read}
+        aria-label={`${read ? "Unmark" : "Mark"} ${refr.book} ${refr.chapter} as read`}
+        className="py-3 pl-4 pr-2 disabled:opacity-60"
+      >
+        <span
+          className={`flex h-5 w-5 items-center justify-center rounded-md border transition ${
+            read ? "border-good bg-good text-page" : "border-line-2 text-transparent"
+          }`}
+        >
+          <span className={read ? "tick-in" : ""}>
+            <Glyph name="check" className="h-3.5 w-3.5" />
+          </span>
+        </span>
+      </button>
       <a
         href={chapterUrl(refr, plan.translation)}
         target="_blank"
         rel="noreferrer"
-        className="group flex items-center justify-between gap-3 rounded-xl border border-line bg-page-2 px-4 py-3 transition hover:border-accent"
+        className="group flex flex-1 items-center justify-between gap-3 py-3"
       >
-        <span className="serif text-[1.0625rem] font-medium text-ink">
+        <span
+          className={`serif text-[1.0625rem] font-medium transition ${
+            read ? "text-ink-3 line-through decoration-ink-3/50" : "text-ink"
+          }`}
+        >
           {refr.book} {refr.chapter}
         </span>
         <Glyph name="arrow-right" className="h-4 w-4 text-ink-3 transition group-hover:text-accent" />

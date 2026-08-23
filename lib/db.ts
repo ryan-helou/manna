@@ -1,7 +1,7 @@
 import type { Pool as PgPool } from "pg";
 import { DEFAULT_TRANSLATION, isTranslation, type TranslationId } from "./bible";
 import { CHAPTER_WEIGHTS } from "./weights";
-import { randomCode, type Completion, type Member, type Note, type PlanSummary, type User } from "./types";
+import { randomCode, type ChapterRead, type Member, type Note, type PlanSummary, type User } from "./types";
 import type { DayKey } from "./dates";
 
 /**
@@ -66,15 +66,15 @@ export interface Store {
   listAllPlans(): Promise<PlanRow[]>;
 
   // Membership
-  addMember(planId: string, userId: string, canEdit: boolean): Promise<void>;
+  addMember(planId: string, userId: string, canEdit: boolean, startDay: DayKey): Promise<void>;
   listMembers(planId: string): Promise<Member[]>;
   isMember(planId: string, userId: string): Promise<boolean>;
   setCanEdit(planId: string, userId: string, canEdit: boolean): Promise<void>;
 
-  // Reading
-  listCompletions(planId: string): Promise<Completion[]>;
-  setCompletion(planId: string, userId: string, day: number, on: DayKey): Promise<void>;
-  clearCompletion(planId: string, userId: string, day: number): Promise<void>;
+  // Reading, stored per chapter rather than per day.
+  listReads(planId: string): Promise<ChapterRead[]>;
+  markRead(planId: string, userId: string, refs: { book: string; chapter: number }[], on: DayKey): Promise<void>;
+  clearRead(planId: string, userId: string, refs: { book: string; chapter: number }[]): Promise<void>;
 
   // Notes
   listNotes(planId: string): Promise<Note[]>;
@@ -191,17 +191,29 @@ class PgStore implements Store {
             minutes INT NOT NULL,
             PRIMARY KEY (book, chapter)
           )`);
+        // A reader's own day 1. Nullable on the way in so an existing row can
+        // be backfilled from the plan's start.
+        await this.pool.query(
+          `ALTER TABLE plan_members ADD COLUMN IF NOT EXISTS start_day DATE`,
+        );
+        await this.pool.query(
+          `UPDATE plan_members m SET start_day = p.start_day
+             FROM plans p WHERE p.id = m.plan_id AND m.start_day IS NULL`,
+        );
+        // Progress is per chapter, not per day: days are slices of a schedule
+        // that moves when the plan length changes, and chapters are not.
         await this.pool.query(`
-          CREATE TABLE IF NOT EXISTS completions (
+          CREATE TABLE IF NOT EXISTS chapter_reads (
             plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
             user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            day INT NOT NULL,
-            completed_on DATE NOT NULL,
+            book TEXT NOT NULL,
+            chapter INT NOT NULL,
+            read_on DATE NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            PRIMARY KEY (plan_id, user_id, day)
+            PRIMARY KEY (plan_id, user_id, book, chapter)
           )`);
         await this.pool.query(
-          `CREATE INDEX IF NOT EXISTS completions_plan_idx ON completions (plan_id)`,
+          `CREATE INDEX IF NOT EXISTS chapter_reads_plan_idx ON chapter_reads (plan_id)`,
         );
         await this.pool.query(`
           CREATE TABLE IF NOT EXISTS notes (
@@ -368,12 +380,12 @@ class PgStore implements Store {
     return r.rows.map(toPlan);
   }
 
-  async addMember(planId: string, userId: string, canEdit: boolean): Promise<void> {
+  async addMember(planId: string, userId: string, canEdit: boolean, startDay: DayKey): Promise<void> {
     await this.init();
     await this.pool.query(
-      `INSERT INTO plan_members (plan_id, user_id, can_edit) VALUES ($1, $2, $3)
+      `INSERT INTO plan_members (plan_id, user_id, can_edit, start_day) VALUES ($1, $2, $3, $4)
        ON CONFLICT (plan_id, user_id) DO NOTHING`,
-      [planId, userId, canEdit],
+      [planId, userId, canEdit, startDay],
     );
   }
 
@@ -381,6 +393,7 @@ class PgStore implements Store {
     await this.init();
     const r = await this.pool.query(
       `SELECT u.id, u.username, u.display_name, m.can_edit, p.creator_id,
+              to_char(COALESCE(m.start_day, p.start_day), 'YYYY-MM-DD') AS start_day,
               to_char(m.joined_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS joined_at
        FROM plan_members m
        JOIN users u ON u.id = m.user_id
@@ -393,6 +406,7 @@ class PgStore implements Store {
       canEdit: x.can_edit || x.id === x.creator_id,
       isCreator: x.id === x.creator_id,
       joinedAt: x.joined_at,
+      startDay: x.start_day,
     }));
   }
 
@@ -412,30 +426,46 @@ class PgStore implements Store {
     );
   }
 
-  async listCompletions(planId: string): Promise<Completion[]> {
+  async listReads(planId: string): Promise<ChapterRead[]> {
     await this.init();
     const r = await this.pool.query(
-      `SELECT user_id, day, to_char(completed_on, 'YYYY-MM-DD') AS completed_on
-       FROM completions WHERE plan_id = $1 ORDER BY day`,
+      `SELECT user_id, book, chapter, to_char(read_on, 'YYYY-MM-DD') AS read_on
+       FROM chapter_reads WHERE plan_id = $1`,
       [planId],
     );
-    return r.rows.map((x) => ({ userId: x.user_id, day: Number(x.day), completedOn: x.completed_on }));
+    return r.rows.map((x) => ({
+      userId: x.user_id, book: x.book, chapter: Number(x.chapter), readOn: x.read_on,
+    }));
   }
 
-  async setCompletion(planId: string, userId: string, day: number, on: DayKey): Promise<void> {
+  async markRead(
+    planId: string,
+    userId: string,
+    refs: { book: string; chapter: number }[],
+    on: DayKey,
+  ): Promise<void> {
+    if (!refs.length) return;
     await this.init();
     await this.pool.query(
-      `INSERT INTO completions (plan_id, user_id, day, completed_on) VALUES ($1, $2, $3, $4)
-       ON CONFLICT (plan_id, user_id, day) DO NOTHING`,
-      [planId, userId, day, on],
+      `INSERT INTO chapter_reads (plan_id, user_id, book, chapter, read_on)
+       SELECT $1, $2, b, c, $4::date FROM UNNEST($3::text[], $5::int[]) AS t(b, c)
+       ON CONFLICT (plan_id, user_id, book, chapter) DO NOTHING`,
+      [planId, userId, refs.map((r) => r.book), on, refs.map((r) => r.chapter)],
     );
   }
 
-  async clearCompletion(planId: string, userId: string, day: number): Promise<void> {
+  async clearRead(
+    planId: string,
+    userId: string,
+    refs: { book: string; chapter: number }[],
+  ): Promise<void> {
+    if (!refs.length) return;
     await this.init();
     await this.pool.query(
-      `DELETE FROM completions WHERE plan_id = $1 AND user_id = $2 AND day = $3`,
-      [planId, userId, day],
+      `DELETE FROM chapter_reads
+        WHERE plan_id = $1 AND user_id = $2
+          AND (book, chapter) IN (SELECT b, c FROM UNNEST($3::text[], $4::int[]) AS t(b, c))`,
+      [planId, userId, refs.map((r) => r.book), refs.map((r) => r.chapter)],
     );
   }
 
@@ -530,8 +560,8 @@ class PgStore implements Store {
 class MemoryStore implements Store {
   private users = new Map<string, User & { passwordHash: string; usernameLower: string }>();
   private plans = new Map<string, PlanRow>();
-  private members = new Map<string, Map<string, { canEdit: boolean; joinedAt: string }>>();
-  private completions = new Map<string, Completion[]>();
+  private members = new Map<string, Map<string, { canEdit: boolean; joinedAt: string; startDay: DayKey }>>();
+  private reads = new Map<string, ChapterRead[]>();
   private notes = new Map<string, Note[]>();
   private weights = new Map<string, number>();
   private subs = new Map<string, StoredSub>();
@@ -619,10 +649,10 @@ class MemoryStore implements Store {
     return [...this.plans.values()];
   }
 
-  async addMember(planId: string, userId: string, canEdit: boolean): Promise<void> {
+  async addMember(planId: string, userId: string, canEdit: boolean, startDay: DayKey): Promise<void> {
     if (!this.members.has(planId)) this.members.set(planId, new Map());
     const m = this.members.get(planId)!;
-    if (!m.has(userId)) m.set(userId, { canEdit, joinedAt: new Date().toISOString() });
+    if (!m.has(userId)) m.set(userId, { canEdit, joinedAt: new Date().toISOString(), startDay });
   }
 
   async listMembers(planId: string): Promise<Member[]> {
@@ -638,6 +668,7 @@ class MemoryStore implements Store {
           canEdit: info.canEdit || userId === plan.creatorId,
           isCreator: userId === plan.creatorId,
           joinedAt: info.joinedAt,
+          startDay: info.startDay ?? plan.startDay,
         };
       });
   }
@@ -651,22 +682,37 @@ class MemoryStore implements Store {
     if (m) m.canEdit = canEdit;
   }
 
-  async listCompletions(planId: string) {
-    return [...(this.completions.get(planId) ?? [])].sort((a, b) => a.day - b.day);
+  async listReads(planId: string) {
+    return [...(this.reads.get(planId) ?? [])];
   }
 
-  async setCompletion(planId: string, userId: string, day: number, on: DayKey): Promise<void> {
-    if (!this.completions.has(planId)) this.completions.set(planId, []);
-    const list = this.completions.get(planId)!;
-    if (!list.some((c) => c.userId === userId && c.day === day)) {
-      list.push({ userId, day, completedOn: on });
+  async markRead(
+    planId: string,
+    userId: string,
+    refs: { book: string; chapter: number }[],
+    on: DayKey,
+  ): Promise<void> {
+    if (!this.reads.has(planId)) this.reads.set(planId, []);
+    const list = this.reads.get(planId)!;
+    for (const r of refs) {
+      if (!list.some((x) => x.userId === userId && x.book === r.book && x.chapter === r.chapter)) {
+        list.push({ userId, book: r.book, chapter: r.chapter, readOn: on });
+      }
     }
   }
 
-  async clearCompletion(planId: string, userId: string, day: number): Promise<void> {
-    const list = this.completions.get(planId);
+  async clearRead(
+    planId: string,
+    userId: string,
+    refs: { book: string; chapter: number }[],
+  ): Promise<void> {
+    const list = this.reads.get(planId);
     if (!list) return;
-    this.completions.set(planId, list.filter((c) => !(c.userId === userId && c.day === day)));
+    const drop = new Set(refs.map((r) => `${r.book} ${r.chapter}`));
+    this.reads.set(
+      planId,
+      list.filter((x) => !(x.userId === userId && drop.has(`${x.book} ${x.chapter}`))),
+    );
   }
 
   async listNotes(planId: string) {
