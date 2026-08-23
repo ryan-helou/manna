@@ -27,22 +27,26 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
   them off one at a time or the whole day at once, and step backward and forward
   through the plan to catch up or read ahead.
 - **Pace.** Ahead, behind or level, with the gap measured in the reading you
-  actually missed rather than in days.
+  actually missed rather than in days, and a list of exactly which days those
+  are, one tap to each.
 - **Streaks.** Consecutive days logged. The day rolls over at 3 AM, not midnight.
 - **Together.** The whole group, ordered by how far through they are, with who
-  has read today at a glance, and a feed of what people have written lately. The
-  gap quoted beside your rank is to the person immediately ahead rather than to
-  the leader.
-- **Journey.** A contribution heatmap over the whole plan, milestone badges for
-  each canonical section (with a moment when you finish one), and running stats:
-  minutes invested, chapters and books finished, average pace, projected finish.
+  has read today at a glance, and a feed of what people have written lately. Tap
+  anyone to see their heatmap, streak and milestones. The gap quoted beside your
+  rank is to the person immediately ahead rather than to the leader.
+- **Journey.** A contribution heatmap over the whole plan where every square
+  opens that day, an index of all 66 books showing where you are in each,
+  milestone badges for each canonical section (with a moment when you finish
+  one), and running stats: minutes invested, chapters and books finished,
+  average pace, projected finish.
 - **Notes.** A shared field on each day's reading. Anyone in the plan can write,
   everyone can read. Flat, no threads.
 - **Verse of the day.** The strongest verse of today's chapters, scored on
   whether it stands on its own, and the same for everyone reading that day.
 - **A daily check.** Five multiple choice questions on what you just read,
   marked on the spot.
-- **Evening reminder.** A web push if today is still unticked.
+- **Evening reminder.** A web push if today is still unticked, at an hour each
+  person picks.
 
 ## The plan
 
@@ -147,6 +151,7 @@ the committed table ever drifts from the model.
 | `VAPID_SUBJECT` | Web push contact, `mailto:` |
 | `CRON_SECRET` | Guards `/api/cron/tick` |
 | `SIGNUP_SECRET` | The shared word needed to register. Unset means anyone can |
+| `TZ` | The group's timezone. Must be set: the day rolls over at 3 AM local, and a container defaults to UTC, which in Toronto means 11 PM |
 | `ESV_API_KEY` | Optional. Shows the verse of the day's text inline |
 
 The 1,189 chapter weights seed themselves into `chapter_weights` on boot, so a

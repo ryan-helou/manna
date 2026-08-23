@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStore } from "@/lib/db";
 import { TOTAL_CHAPTERS } from "@/lib/bible";
 import { cachedVerseCount, VERSE_CACHE_LIMIT } from "@/lib/verse-text";
+import { today } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,10 @@ export async function GET() {
       // Crossway caps ESV caching at 500 verses; surfaced so it is checkable.
       versesCached: cachedVerseCount(),
       verseCacheLimit: VERSE_CACHE_LIMIT,
+      // Surfaced because the day rollover depends on it, and a container that
+      // quietly defaults to UTC moves everyone's day by four hours.
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      today: today(),
     });
   } catch {
     return NextResponse.json({ ok: false, error: "storage unavailable" }, { status: 503 });

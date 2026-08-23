@@ -73,7 +73,12 @@ export async function signIn(username: string, password: string): Promise<User |
   }
   if (!(await checkPassword(found.passwordHash, password))) return null;
   await startSession(found.id);
-  return { id: found.id, username: found.username, displayName: found.displayName };
+  return {
+    id: found.id,
+    username: found.username,
+    displayName: found.displayName,
+    reminderHour: found.reminderHour,
+  };
 }
 
 /** Swap a password, but only for someone who can produce the old one. */

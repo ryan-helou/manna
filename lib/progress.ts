@@ -172,6 +172,21 @@ export function paceFor(plan: ActivePlan, userId: string, today: DayKey): Pace {
   };
 }
 
+/**
+ * The days that are over and unfinished, earliest first.
+ *
+ * `paceFor` has always worked this out in order to say "three days behind" and
+ * then thrown the list away, leaving the reader to hunt for them a day at a
+ * time with the back arrow. Same walk, list kept.
+ */
+export function missedDays(plan: ActivePlan, userId: string, today: DayKey): number[] {
+  const done = completedDays(plan, userId);
+  const pastDue = currentDay(plan, today, userId) - 1;
+  const out: number[] = [];
+  for (let d = 1; d <= pastDue; d++) if (!done.has(d)) out.push(d);
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Streak
 // ---------------------------------------------------------------------------

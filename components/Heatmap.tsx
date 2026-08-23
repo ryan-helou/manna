@@ -13,10 +13,13 @@ export function Heatmap({
   plan,
   userId,
   today,
+  onSelect,
 }: {
   plan: ActivePlan;
   userId: string;
   today: DayKey;
+  /** Given when the squares should be tappable. Omitted for someone else's. */
+  onSelect?: (day: number) => void;
 }) {
   const days = totalDays(plan);
   // Built once for the whole grid rather than inside every cell.
@@ -47,27 +50,35 @@ export function Heatmap({
                 const isPartial = done > 0 && !isDone;
                 const isFuture = cell.date > today;
                 const isToday = cell.date === today;
+                const label = `${formatLongDay(cell.date)}: ${
+                  isDone
+                    ? "read"
+                    : isPartial
+                      ? `${done} of ${total} read`
+                      : isFuture
+                        ? "still to come"
+                        : "not logged"
+                }`;
+                const tone = `h-2.5 w-2.5 rounded-[3px] ${
+                  isDone
+                    ? "bg-accent"
+                    : isPartial
+                      ? "bg-accent/40"
+                      : isFuture
+                        ? "bg-page-2"
+                        : "bg-line"
+                } ${isToday ? "ring-1 ring-ink-2" : ""}`;
+                // Every square is a day you can open. Painting the missed ones
+                // grey and then making them untouchable was the whole problem.
+                if (!onSelect) return <span key={di} title={label} className={tone} />;
+                const cellDay = cell.day;
                 return (
-                  <span
+                  <button
                     key={di}
-                    title={`${formatLongDay(cell.date)}: ${
-                      isDone
-                        ? "read"
-                        : isPartial
-                          ? `${done} of ${total} read`
-                          : isFuture
-                            ? "still to come"
-                            : "not logged"
-                    }`}
-                    className={`h-2.5 w-2.5 rounded-[3px] ${
-                      isDone
-                        ? "bg-accent"
-                        : isPartial
-                          ? "bg-accent/40"
-                          : isFuture
-                            ? "bg-page-2"
-                            : "bg-line"
-                    } ${isToday ? "ring-1 ring-ink-2" : ""}`}
+                    title={label}
+                    aria-label={label}
+                    onClick={() => onSelect(cellDay)}
+                    className={`${tone} transition hover:ring-2 hover:ring-accent`}
                   />
                 );
               })}

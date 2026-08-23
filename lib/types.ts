@@ -6,7 +6,12 @@ export interface User {
   username: string;
   /** What everyone else sees. Defaults to the username. */
   displayName: string;
+  /** Hour of the evening nudge, in the group's timezone. Null means the default. */
+  reminderHour: number | null;
 }
+
+/** When the nudge goes out if nobody picks. */
+export const DEFAULT_REMINDER_HOUR = 19;
 
 /** A plan as it appears in the switcher: just enough to name and pick it. */
 export interface PlanSummary {

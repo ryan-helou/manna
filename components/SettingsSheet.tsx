@@ -34,6 +34,7 @@ export function SettingsSheet({
     username?: string;
     currentPassword?: string;
     newPassword?: string;
+    reminderHour?: number;
   }) => Promise<string | null>;
   onToggleEdit: (userId: string, canEdit: boolean) => void;
   onRemove: (userId: string) => void;
@@ -309,7 +310,11 @@ export function SettingsSheet({
         </div>
 
         {/* ---- notifications ---- */}
-        <NotificationSetup configured={pushConfigured} />
+        <NotificationSetup
+          configured={pushConfigured}
+          reminderHour={me.reminderHour}
+          onHour={(hour) => void onSaveProfile({ reminderHour: hour })}
+        />
 
         {/* ---- appearance ---- */}
         <div>

@@ -56,6 +56,7 @@ export interface Store {
   setDisplayName(userId: string, displayName: string): Promise<void>;
   setUsername(userId: string, username: string): Promise<void>;
   setPasswordHash(userId: string, hash: string): Promise<void>;
+  setReminderHour(userId: string, hour: number | null): Promise<void>;
 
   // Plans
   createPlan(input: NewPlan): Promise<PlanRow>;
@@ -165,6 +166,11 @@ class PgStore implements Store {
             password_hash TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           )`);
+        // The hour the evening nudge goes out, in the group's timezone. Null
+        // means the default. Nobody in a group of a dozen keeps the same hours.
+        await this.pool.query(
+          `ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_hour INT`,
+        );
         await this.pool.query(`
           CREATE TABLE IF NOT EXISTS plans (
             id TEXT PRIMARY KEY,
@@ -292,26 +298,37 @@ class PgStore implements Store {
     const r = await this.pool.query(
       `INSERT INTO users (id, username, username_lower, display_name, password_hash)
        VALUES ($1, $2, $3, $2, $4)
-       RETURNING id, username, display_name`,
+       RETURNING id, username, display_name, reminder_hour`,
       [newId(), username, username.toLowerCase(), passwordHash],
     );
-    return { id: r.rows[0].id, username: r.rows[0].username, displayName: r.rows[0].display_name };
+    return {
+      id: r.rows[0].id,
+      username: r.rows[0].username,
+      displayName: r.rows[0].display_name,
+      reminderHour: r.rows[0].reminder_hour ?? null,
+    };
   }
 
   async getUser(id: string): Promise<User | null> {
     await this.init();
     const r = await this.pool.query(
-      `SELECT id, username, display_name FROM users WHERE id = $1`, [id],
+      `SELECT id, username, display_name, reminder_hour FROM users WHERE id = $1`, [id],
     );
     return r.rows[0]
-      ? { id: r.rows[0].id, username: r.rows[0].username, displayName: r.rows[0].display_name }
+      ? {
+          id: r.rows[0].id,
+          username: r.rows[0].username,
+          displayName: r.rows[0].display_name,
+          reminderHour: r.rows[0].reminder_hour ?? null,
+        }
       : null;
   }
 
   async findUserByUsername(username: string) {
     await this.init();
     const r = await this.pool.query(
-      `SELECT id, username, display_name, password_hash FROM users WHERE username_lower = $1`,
+      `SELECT id, username, display_name, password_hash, reminder_hour
+         FROM users WHERE username_lower = $1`,
       [username.toLowerCase()],
     );
     if (!r.rows[0]) return null;
@@ -320,6 +337,7 @@ class PgStore implements Store {
       username: r.rows[0].username,
       displayName: r.rows[0].display_name,
       passwordHash: r.rows[0].password_hash,
+      reminderHour: r.rows[0].reminder_hour ?? null,
     };
   }
 
@@ -339,6 +357,11 @@ class PgStore implements Store {
   async setPasswordHash(userId: string, hash: string): Promise<void> {
     await this.init();
     await this.pool.query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [userId, hash]);
+  }
+
+  async setReminderHour(userId: string, hour: number | null): Promise<void> {
+    await this.init();
+    await this.pool.query(`UPDATE users SET reminder_hour = $2 WHERE id = $1`, [userId, hour]);
   }
 
   async createPlan(input: NewPlan): Promise<PlanRow> {
@@ -413,6 +436,7 @@ class PgStore implements Store {
     const r = await this.pool.query(
       `SELECT u.id, u.username, u.display_name, m.can_edit, p.creator_id,
               to_char(COALESCE(m.start_day, p.start_day), 'YYYY-MM-DD') AS start_day,
+              u.reminder_hour,
               to_char(m.joined_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS joined_at
        FROM plan_members m
        JOIN users u ON u.id = m.user_id
@@ -426,6 +450,7 @@ class PgStore implements Store {
       isCreator: x.id === x.creator_id,
       joinedAt: x.joined_at,
       startDay: x.start_day,
+      reminderHour: x.reminder_hour ?? null,
     }));
   }
 
@@ -629,21 +654,29 @@ class MemoryStore implements Store {
       err.code = "23505";
       throw err;
     }
-    const user = { id: newId(), username, displayName: username, passwordHash, usernameLower: lower };
+    const user = {
+      id: newId(), username, displayName: username, passwordHash,
+      usernameLower: lower, reminderHour: null,
+    };
     this.users.set(user.id, user);
-    return { id: user.id, username: user.username, displayName: user.displayName };
+    return { id: user.id, username: user.username, displayName: user.displayName, reminderHour: null };
   }
 
   async getUser(id: string): Promise<User | null> {
     const u = this.users.get(id);
-    return u ? { id: u.id, username: u.username, displayName: u.displayName } : null;
+    return u
+      ? { id: u.id, username: u.username, displayName: u.displayName, reminderHour: u.reminderHour ?? null }
+      : null;
   }
 
   async findUserByUsername(username: string) {
     const lower = username.toLowerCase();
     const u = [...this.users.values()].find((x) => x.usernameLower === lower);
     return u
-      ? { id: u.id, username: u.username, displayName: u.displayName, passwordHash: u.passwordHash }
+      ? {
+          id: u.id, username: u.username, displayName: u.displayName,
+          passwordHash: u.passwordHash, reminderHour: u.reminderHour ?? null,
+        }
       : null;
   }
 
@@ -666,6 +699,11 @@ class MemoryStore implements Store {
   async setPasswordHash(userId: string, hash: string): Promise<void> {
     const u = this.users.get(userId);
     if (u) u.passwordHash = hash;
+  }
+
+  async setReminderHour(userId: string, hour: number | null): Promise<void> {
+    const u = this.users.get(userId);
+    if (u) u.reminderHour = hour;
   }
 
   async createPlan(input: NewPlan): Promise<PlanRow> {
@@ -730,6 +768,7 @@ class MemoryStore implements Store {
           isCreator: userId === plan.creatorId,
           joinedAt: info.joinedAt,
           startDay: info.startDay ?? plan.startDay,
+          reminderHour: u.reminderHour ?? null,
         };
       });
   }

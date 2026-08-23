@@ -2,7 +2,9 @@
 
 import { Glyph } from "./Glyph";
 import { Heatmap } from "./Heatmap";
+import { BookIndexSheet } from "./BookIndexSheet";
 import { formatMinutes, formatShortDate, type DayKey } from "@/lib/dates";
+import { useState } from "react";
 import { milestonesFor, longestStreakFor, statsFor } from "@/lib/progress";
 import { TOTAL_CHAPTERS } from "@/lib/bible";
 import type { ActivePlan, User } from "@/lib/types";
@@ -12,14 +14,17 @@ export function JourneyTab({
   plan,
   me,
   today,
+  onGoToDay,
 }: {
   plan: ActivePlan;
   me: User;
   today: DayKey;
+  onGoToDay: (day: number) => void;
 }) {
   const s = statsFor(plan, me.id, today);
   const milestones = milestonesFor(plan, me.id);
   const best = longestStreakFor(plan, me.id);
+  const [booksOpen, setBooksOpen] = useState(false);
 
   return (
     <div className="space-y-5 pb-4">
@@ -66,13 +71,31 @@ export function JourneyTab({
         </div>
       </section>
 
+      <button
+        onClick={() => setBooksOpen(true)}
+        className="rise-in flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-card p-5 text-left transition hover:border-accent"
+        style={{ animationDelay: "40ms" }}
+      >
+        <span>
+          <span className="eyebrow flex items-center gap-1.5 text-ink-2">
+            <Glyph name="book" className="h-3.5 w-3.5" />
+            The books
+          </span>
+          <span className="mt-1.5 block text-sm text-ink-2">
+            All sixty-six, and where you are in each.
+          </span>
+        </span>
+        <Glyph name="arrow-right" className="h-4 w-4 shrink-0 text-ink-3" />
+      </button>
+
       <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "60ms" }}>
         <p className="eyebrow flex items-center gap-1.5 text-ink-2">
           <Glyph name="calendar" className="h-3.5 w-3.5" />
           Every day of the plan
         </p>
+        <p className="mt-1.5 text-xs text-ink-3">Tap any square to open that day.</p>
         <div className="mt-4">
-          <Heatmap plan={plan} userId={me.id} today={today} />
+          <Heatmap plan={plan} userId={me.id} today={today} onSelect={onGoToDay} />
         </div>
       </section>
 
@@ -115,6 +138,14 @@ export function JourneyTab({
           ))}
         </ul>
       </section>
+      {booksOpen && (
+        <BookIndexSheet
+          plan={plan}
+          me={me}
+          onClose={() => setBooksOpen(false)}
+          onGoToDay={onGoToDay}
+        />
+      )}
     </div>
   );
 }

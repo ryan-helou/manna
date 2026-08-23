@@ -11,7 +11,7 @@ import { MilestoneCard } from "./MilestoneCard";
 import { Glyph, type GlyphName } from "./Glyph";
 import { useManna } from "./useManna";
 import { today as deviceToday, type DayKey } from "@/lib/dates";
-import { milestonesFor, type Milestone } from "@/lib/progress";
+import { currentDay, milestonesFor, type Milestone } from "@/lib/progress";
 import type { AppState } from "@/lib/types";
 import { allChapters, type Ref } from "@/lib/bible";
 import { today as todayKey } from "@/lib/dates";
@@ -57,6 +57,10 @@ export function AppShell({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>("system");
   const [celebrating, setCelebrating] = useState<Milestone | null>(null);
+  // Which day the reading card is showing, as an offset from today. Held here
+  // rather than in the card because the heatmap and the book index both need to
+  // send you to a day, and offsets survive the 3 AM rollover without resyncing.
+  const [dayOffset, setDayOffset] = useState(0);
 
   // Start from the server's day so the first client render matches the markup,
   // then hand over to the device's own calendar. A home-screen app is usually
@@ -176,6 +180,8 @@ export function AppShell({
             quiz={state.quiz}
             today={refDay}
             busy={busy}
+            dayOffset={dayOffset}
+            onDayOffset={setDayOffset}
             onToggleDay={(day, done) =>
               void sendOptimistic(
                 (s) => applyReads(s, allChapters().slice(plan.cuts[day - 1], plan.cuts[day]), done),
@@ -202,8 +208,20 @@ export function AppShell({
             }
           />
         )}
-        {tab === "together" && <TogetherTab plan={plan} me={state.me} feed={state.feed} />}
-        {tab === "journey" && <JourneyTab plan={plan} me={state.me} today={refDay} />}
+        {tab === "together" && (
+          <TogetherTab plan={plan} me={state.me} feed={state.feed} today={refDay} />
+        )}
+        {tab === "journey" && (
+          <JourneyTab
+            plan={plan}
+            me={state.me}
+            today={refDay}
+            onGoToDay={(day) => {
+              setDayOffset(day - currentDay(plan, refDay, state.me!.id));
+              setTab("today");
+            }}
+          />
+        )}
       </main>
 
       {/* ---- tab bar ---- */}

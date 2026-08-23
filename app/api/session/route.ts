@@ -83,6 +83,7 @@ export async function PATCH(req: Request) {
     username?: unknown;
     currentPassword?: unknown;
     newPassword?: unknown;
+    reminderHour?: unknown;
   };
   const store = getStore();
 
@@ -117,6 +118,14 @@ export async function PATCH(req: Request) {
         throw err;
       }
     }
+  }
+
+  if (body.reminderHour !== undefined) {
+    const hour = body.reminderHour === null ? null : Number(body.reminderHour);
+    if (hour !== null && (!Number.isInteger(hour) || hour < 0 || hour > 23)) {
+      return NextResponse.json({ error: "Pick an hour of the day." }, { status: 400 });
+    }
+    await store.setReminderHour(me.id, hour);
   }
 
   if (body.newPassword !== undefined) {

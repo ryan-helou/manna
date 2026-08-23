@@ -1,10 +1,11 @@
 name: Manna evening reminder
 
-# One nudge a day to anyone who has not logged today's reading. GitHub cron runs
-# in UTC; 23:00 UTC is 19:00 in America/Toronto.
+# Runs every hour. The endpoint sends only to people whose chosen reminder hour
+# it currently is, so everyone gets nudged at the hour they picked rather than
+# all at seven. Deduped per person per day server side.
 on:
   schedule:
-    - cron: "0 23 * * *"
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:

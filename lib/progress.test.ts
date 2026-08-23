@@ -1,7 +1,8 @@
 import {
   chaptersForDay, currentDay, dateOfDay, dayComplete, dayProgress,
   longestStreakFor, milestonesFor, minutesForDay, paceFor, planEnded,
-  computeStandings, scheduleFromCuts, statsFor, streakFor, totalDays, verseOfTheDay,
+  computeStandings, missedDays, scheduleFromCuts, statsFor, streakFor, totalDays,
+  verseOfTheDay,
 } from "./progress";
 import { partition } from "./schedule";
 import { allChapters, refKey, TOTAL_CHAPTERS } from "./bible";
@@ -50,7 +51,7 @@ function plan(
     members: members.map((id, i) => ({
       id, username: id, displayName: id === "me" ? "Ryan" : "Sam",
       canEdit: i === 0, isCreator: i === 0, joinedAt: "2026-01-01T00:00:00Z",
-      startDay: starts[id] ?? START,
+      startDay: starts[id] ?? START, reminderHour: null,
     })),
     cuts: partition(weights, DAYS),
     reads,
@@ -309,6 +310,35 @@ console.log("\na late joiner starts at day one");
   check("ten days on they are on day 11", currentDay(p, addDays(joined, 10), "friend"), 11);
   // The creator is unaffected by someone joining late.
   check("the creator keeps their own day", currentDay(p, addDays(joined, 10), "me"), 41);
+}
+
+console.log("\nthe days you actually owe");
+{
+  // paceFor has always worked these out to say "three days behind" and thrown
+  // the list away. The reader was left to find them with the back arrow.
+  const today = addDays(START, 9); // day 10
+  const p = plan(days("me", [1, 2, 4, 7], (d) => addDays(START, d - 1)));
+  check("lists the days that are over and unfinished", missedDays(p, "me", today), [3, 5, 6, 8, 9]);
+  check("today is never owed", missedDays(p, "me", today).includes(10), false);
+  check("count agrees with the pace badge", missedDays(p, "me", today).length, -paceFor(p, "me", today).delta);
+
+  // The debt in minutes must be exactly these days' reading.
+  check(
+    "and with the minutes it quotes",
+    paceFor(p, "me", today).minutesBehind,
+    [3, 5, 6, 8, 9].reduce((a, d) => a + minutesForDay(p, d), 0),
+  );
+
+  const caughtUp = plan(days("me", [1,2,3,4,5,6,7,8,9], (d) => addDays(START, d - 1)));
+  check("nothing owed when caught up", missedDays(caughtUp, "me", today), []);
+  check("nothing owed on day one", missedDays(plan(), "me", START), []);
+
+  // A part-finished day still counts as owed, and its remainder as the debt.
+  const chapters = chaptersForDay(plan(), 1);
+  const half = plan(
+    chapters.slice(0, 1).map((r) => ({ userId: "me", book: r.book, chapter: r.chapter, readOn: START })),
+  );
+  check("a half-read day is still owed", missedDays(half, "me", addDays(START, 1)), [1]);
 }
 
 console.log("\nverse of the day is the best of the day's chapters");

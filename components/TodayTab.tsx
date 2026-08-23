@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { Glyph } from "./Glyph";
 import { DailyQuiz } from "./DailyQuiz";
 import { chapterUrl, formatRefs, type Ref } from "@/lib/bible";
-import { formatDayRelative, formatLongDay, timeAgo, type DayKey } from "@/lib/dates";
+import { formatDay, formatDayRelative, formatLongDay, timeAgo, type DayKey } from "@/lib/dates";
 import {
   chaptersForDay, currentDay, dateOfDay, dayProgress, isChapterRead, paceFor,
-  planEnded, startDayFor, streakFor, totalDays, verseOfTheDay,
+  missedDays, planEnded, startDayFor, streakFor, totalDays, verseOfTheDay,
 } from "@/lib/progress";
 import { MAX_NOTE_LENGTH } from "@/lib/types";
 import type { ActivePlan, Note, QuizQuestion, User, VerseOfDay } from "@/lib/types";
@@ -20,6 +20,8 @@ export function TodayTab({
   quiz,
   today,
   busy,
+  dayOffset,
+  onDayOffset,
   onToggleDay,
   onToggleChapter,
   onAddNote,
@@ -31,6 +33,8 @@ export function TodayTab({
   quiz: QuizQuestion[];
   today: DayKey;
   busy: boolean;
+  dayOffset: number;
+  onDayOffset: (offset: number) => void;
   onToggleDay: (day: number, done: boolean) => void;
   onToggleChapter: (ref: Ref, done: boolean) => void;
   onAddNote: (day: number, body: string) => Promise<string | null>;
@@ -39,20 +43,13 @@ export function TodayTab({
   const days = totalDays(plan);
   const base = currentDay(plan, today, me.id);
 
-  // Which day is on screen, held as an offset from today rather than as an
-  // absolute day. When the clock rolls past 3 AM and `today` moves on, the view
-  // moves with it, and offset zero is always today without any resyncing.
-  const [offset, setOffset] = useState(0);
-  const day = Math.max(1, Math.min(days, base + offset));
-  // Stepped from the previous offset rather than from the rendered day: four
-  // quick taps on Next are batched into one render, and reading `day` out of a
-  // stale closure would move exactly one day for all four of them.
+  // The offset lives in the shell, because the heatmap and the book index both
+  // send you to a day. Offset zero is always today, so the 3 AM rollover carries
+  // the view with it rather than stranding you on a stale date.
+  const day = Math.max(1, Math.min(days, base + dayOffset));
   const go = (delta: number) => {
-    setOffset((prev) => {
-      const from = Math.max(1, Math.min(days, base + prev));
-      const next = Math.max(1, Math.min(days, from + delta));
-      return next - base;
-    });
+    const next = Math.max(1, Math.min(days, day + delta));
+    onDayOffset(next - base);
   };
 
   const chapters = chaptersForDay(plan, day);
@@ -64,6 +61,7 @@ export function TodayTab({
   const done = progress.total > 0 && progress.done === progress.total;
   const started = progress.done > 0 && !done;
   const ended = planEnded(plan, today, me.id);
+  const missed = missedDays(plan, me.id, today);
 
   const [noteDraft, setNoteDraft] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
@@ -144,7 +142,7 @@ export function TodayTab({
 
         {!isToday && (
           <button
-            onClick={() => setOffset(0)}
+            onClick={() => onDayOffset(0)}
             className="mx-auto mt-2 flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-2 transition hover:border-accent hover:text-accent"
           >
             <Glyph name="arrow-right" className="h-3 w-3" />
@@ -200,6 +198,48 @@ export function TodayTab({
                   : "Read ahead"}
         </button>
       </section>
+
+      {/* ---- what you actually owe ---- */}
+      {missed.length > 0 && (
+        <section className="rise-in rounded-2xl border border-warn/30 bg-card p-5" style={{ animationDelay: "30ms" }}>
+          <p className="eyebrow flex items-center gap-1.5 text-warn">
+            <Glyph name="arrow-down" className="h-3.5 w-3.5" />
+            {missed.length} day{missed.length === 1 ? "" : "s"} to catch up
+          </p>
+          <p className="mt-1.5 text-sm text-ink-2">
+            {formatMinutes(pace.minutesBehind)} of reading. Pick one.
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {missed.slice(0, 5).map((d) => {
+              const prog = dayProgress(plan, me.id, d);
+              return (
+                <li key={d}>
+                  <button
+                    onClick={() => onDayOffset(d - base)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-page-2 px-4 py-2.5 text-left transition hover:border-accent"
+                  >
+                    <span className="min-w-0">
+                      <span className="serif block truncate text-[0.9375rem] font-medium text-ink">
+                        {formatRefs(chaptersForDay(plan, d))}
+                      </span>
+                      <span className="text-xs text-ink-3">
+                        {formatDay(dateOfDay(plan, d, me.id))}
+                        {prog.done > 0 && ` · ${prog.done} of ${prog.total} already read`}
+                      </span>
+                    </span>
+                    <Glyph name="arrow-right" className="h-4 w-4 shrink-0 text-ink-3" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {missed.length > 5 && (
+            <p className="mt-2 text-xs text-ink-3">
+              and {missed.length - 5} more further back
+            </p>
+          )}
+        </section>
+      )}
 
       {/* ---- pace and progress: always about now, whatever day is on screen ---- */}
       <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "60ms" }}>

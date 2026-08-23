@@ -6,8 +6,15 @@
 
 export type DayKey = string; // YYYY-MM-DD
 
-/** The day rolls over at 3 AM, not midnight: reading at 1 AM still counts as
- *  the day you have been awake for, which is how people actually experience it. */
+/**
+ * The day rolls over at 3 AM, not midnight: reading at 1 AM still counts as the
+ * day you have been awake for, which is how people actually experience it.
+ *
+ * This is 3 AM wherever the server thinks it is, so the server has to be told.
+ * A container defaults to UTC, and against a reader in Toronto that put the
+ * rollover at 11 PM: an evening's reading was filed under tomorrow and the
+ * streak it belonged to broke. `TZ` is set on the deployment for that reason.
+ */
 export const RESET_HOUR = 3;
 
 export function toDayKey(d: Date): DayKey {

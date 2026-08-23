@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Glyph } from "./Glyph";
+import { DEFAULT_REMINDER_HOUR } from "@/lib/types";
 
 type State = "checking" | "unsupported" | "need-standalone" | "off" | "on" | "denied" | "working";
 
@@ -19,7 +20,21 @@ const isStandalone = (): boolean =>
   (window.navigator as { standalone?: boolean }).standalone === true;
 
 /** The evening nudge, if today's reading is still unticked. */
-export function NotificationSetup({ configured }: { configured: boolean }) {
+function hourLabel(h: number): string {
+  if (h === 0) return "midnight";
+  if (h === 12) return "noon";
+  return h < 12 ? `${h} am` : `${h - 12} pm`;
+}
+
+export function NotificationSetup({
+  configured,
+  reminderHour,
+  onHour,
+}: {
+  configured: boolean;
+  reminderHour: number | null;
+  onHour: (hour: number) => void;
+}) {
   const [state, setState] = useState<State>("checking");
   const [error, setError] = useState<string | null>(null);
 
@@ -145,6 +160,29 @@ export function NotificationSetup({ configured }: { configured: boolean }) {
         <p role="alert" className="mt-2 text-sm font-medium text-warn">
           {error}
         </p>
+      )}
+
+      {state === "on" && (
+        <div className="mt-4 border-t border-line pt-3">
+          <label htmlFor="reminder-hour" className="block text-sm text-ink-2">
+            Nudge me at
+          </label>
+          <select
+            id="reminder-hour"
+            value={reminderHour ?? DEFAULT_REMINDER_HOUR}
+            onChange={(e) => onHour(Number(e.target.value))}
+            className="mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+          >
+            {Array.from({ length: 24 }, (_, h) => h).map((h) => (
+              <option key={h} value={h}>
+                {hourLabel(h)}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-xs text-ink-3">
+            Only if the day is still unticked by then.
+          </p>
+        </div>
       )}
     </div>
   );

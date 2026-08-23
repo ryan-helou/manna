@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Glyph } from "./Glyph";
-import { formatMinutes } from "@/lib/dates";
+import { PersonSheet } from "./PersonSheet";
+import { formatMinutes, type DayKey } from "@/lib/dates";
 import { totalDays } from "@/lib/progress";
 import { timeAgo } from "@/lib/dates";
 import type { ActivePlan, FeedNote, User } from "@/lib/types";
@@ -19,10 +21,12 @@ export function TogetherTab({
   plan,
   me,
   feed,
+  today,
 }: {
   plan: ActivePlan;
   me: User;
   feed: FeedNote[];
+  today: DayKey;
 }) {
   const board = plan.standings;
   const days = totalDays(plan);
@@ -31,6 +35,8 @@ export function TogetherTab({
   const ahead = myRank > 1 ? board[myRank - 2] : null;
 
   const doneToday = board.filter((s) => s.readToday);
+  const [looking, setLooking] = useState<string | null>(null);
+  const lookingAt = board.find((s) => s.userId === looking) ?? null;
   const iAmDone = doneToday.some((s) => s.userId === me.id);
 
   return (
@@ -106,6 +112,11 @@ export function TogetherTab({
             const theirDay = s.day;
             return (
               <li key={s.userId}>
+                <button
+                  onClick={() => setLooking(s.userId)}
+                  aria-label={`See how ${s.displayName} is going`}
+                  className="w-full text-left"
+                >
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="flex min-w-0 items-baseline gap-2">
                     <span className="stat w-4 shrink-0 text-xs text-ink-3">{i + 1}</span>
@@ -164,6 +175,7 @@ export function TogetherTab({
                         : `${-s.delta} behind`}
                   </span>
                 </div>
+                </button>
               </li>
             );
           })}
@@ -173,6 +185,7 @@ export function TogetherTab({
           <span aria-hidden className="inline-block h-3 w-px bg-ink-3" />
           the line marks where each person&apos;s own plan says they should be tonight
         </p>
+        <p className="mt-1.5 text-xs text-ink-3">Tap anyone to see how they are going.</p>
       </section>
 
       {/* ---- what people have been writing ---- */}
@@ -204,6 +217,14 @@ export function TogetherTab({
           </ul>
         )}
       </section>
+      {lookingAt && (
+        <PersonSheet
+          plan={plan}
+          standing={lookingAt}
+          today={today}
+          onClose={() => setLooking(null)}
+        />
+      )}
     </div>
   );
 }
