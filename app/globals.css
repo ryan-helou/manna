@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/*
+  Manna. Bread for the day, not for the week.
+
+  The palette is paper and ink: a warm, unbleached page in the light, deep
+  lamp-lit brown in the dark, and one amber accent that carries every piece of
+  progress. Nothing here shouts, because this is a thing you open at six in the
+  morning before you have spoken to anyone.
+*/
+@theme {
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
+}
+
+/* Light: unbleached paper. */
+:root {
+  --page: #faf7f1;
+  --page-2: #f2ece1;
+  --card: #ffffff;
+  --ink: #1c1815;
+  --ink-2: #6b6155;
+  --ink-3: #9c9284;
+  --line: #e2d9c9;
+  --line-2: #cfc3ad;
+
+  --accent: #a56724;
+  --accent-soft: #eadbc2;
+  --good: #4a7a44;
+  --warn: #a8542a;
+
+  color-scheme: light;
+}
+
+/* Dark: the same page under a lamp. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #14110e;
+    --page-2: #1c1815;
+    --card: #211c18;
+    --ink: #f3ede2;
+    --ink-2: #a99c8b;
+    --ink-3: #776c5e;
+    --line: #2f2822;
+    --line-2: #443a31;
+
+    --accent: #e0a75a;
+    --accent-soft: #3a2d1c;
+    --good: #86b57c;
+    --warn: #d78a56;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --page: #14110e;
+  --page-2: #1c1815;
+  --card: #211c18;
+  --ink: #f3ede2;
+  --ink-2: #a99c8b;
+  --ink-3: #776c5e;
+  --line: #2f2822;
+  --line-2: #443a31;
+
+  --accent: #e0a75a;
+  --accent-soft: #3a2d1c;
+  --good: #86b57c;
+  --warn: #d78a56;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-page-2: var(--page-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+}
+
+html,
+body {
+  background: var(--page);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-body);
+  /* Home-screen apps sit under the notch and over the home indicator. */
+  padding-top: env(safe-area-inset-top);
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  /* A first light behind the page: dawn at the top edge, gone by the fold. */
+  background-image: radial-gradient(
+    120% 42% at 50% -6%,
+    color-mix(in srgb, var(--accent) 13%, transparent) 0%,
+    transparent 62%
+  );
+  background-attachment: fixed;
+}
+
+/* Scripture references and headings: a serif, because this is a book. */
+.serif {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.stat {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* A rule with a little weight to it, used to close a section. */
+.rule {
+  height: 1px;
+  background: linear-gradient(90deg, var(--line-2), transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The tick landing: a quick, satisfied settle rather than a bounce. */
+@keyframes tick-in {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.tick-in {
+  animation: tick-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.rise-in {
+  animation: rise-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* The progress bar fills from where it was, so returning feels like arriving. */
+@keyframes fill-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.fill-in {
+  transform-origin: left center;
+  animation: fill-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

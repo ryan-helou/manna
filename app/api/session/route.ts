@@ -1,0 +1,84 @@
+import { NextResponse } from "next/server";
+import { getStore } from "@/lib/db";
+import { currentUser, register, signIn, signOut } from "@/lib/session";
+import { readState } from "@/lib/state";
+import { isUsername, normalizeUsername, MAX_NAME_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  return NextResponse.json(await readState());
+}
+
+export async function POST(req: Request) {
+  const body = (await req.json().catch(() => ({}))) as {
+    username?: unknown;
+    password?: unknown;
+    mode?: unknown;
+  };
+  const username = typeof body.username === "string" ? normalizeUsername(body.username) : "";
+  const password = typeof body.password === "string" ? body.password : "";
+  const mode = body.mode === "register" ? "register" : "signin";
+
+  if (!isUsername(username)) {
+    return NextResponse.json(
+      { error: "Usernames are 2 to 30 characters: letters, numbers, dots, dashes, underscores." },
+      { status: 400 },
+    );
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return NextResponse.json(
+      { error: `Passwords need at least ${MIN_PASSWORD_LENGTH} characters.` },
+      { status: 400 },
+    );
+  }
+  if (password.length > 200) {
+    return NextResponse.json({ error: "That password is too long." }, { status: 400 });
+  }
+
+  if (mode === "register") {
+    const taken = await getStore().findUserByUsername(username);
+    if (taken) {
+      return NextResponse.json({ error: "That username is taken." }, { status: 409 });
+    }
+    try {
+      await register(username, password);
+    } catch (err) {
+      // Someone claimed it between the check and the insert.
+      if ((err as { code?: string }).code === "23505") {
+        return NextResponse.json({ error: "That username is taken." }, { status: 409 });
+      }
+      throw err;
+    }
+    return NextResponse.json(await readState());
+  }
+
+  const user = await signIn(username, password);
+  if (!user) {
+    return NextResponse.json({ error: "Wrong username or password." }, { status: 401 });
+  }
+  return NextResponse.json(await readState());
+}
+
+export async function PATCH(req: Request) {
+  const me = await currentUser();
+  if (!me) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+
+  const body = (await req.json().catch(() => ({}))) as { displayName?: unknown };
+  if (typeof body.displayName === "string") {
+    const name = body.displayName.trim();
+    if (!name || name.length > MAX_NAME_LENGTH) {
+      return NextResponse.json(
+        { error: `Pick a name between 1 and ${MAX_NAME_LENGTH} characters.` },
+        { status: 400 },
+      );
+    }
+    await getStore().setDisplayName(me.id, name);
+  }
+  return NextResponse.json(await readState());
+}
+
+export async function DELETE() {
+  await signOut();
+  return NextResponse.json(await readState());
+}

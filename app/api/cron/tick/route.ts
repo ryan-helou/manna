@@ -1,0 +1,91 @@
+import { NextResponse } from "next/server";
+import { getStore } from "@/lib/db";
+import { pushConfigured, sendToUser } from "@/lib/push";
+import { cutsFor } from "@/lib/state";
+import { today } from "@/lib/dates";
+import { allChapters, formatRefs } from "@/lib/bible";
+import { weightOf } from "@/lib/weights";
+import { formatMinutes } from "@/lib/dates";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Scheduled work, triggered by an external cron hitting this endpoint with the
+ * shared secret.
+ *   ?job=evening — nudge anyone who has not logged today's reading yet
+ *
+ * Deduped per plan per day through the meta store, so a double fire never
+ * double notifies.
+ */
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const key = url.searchParams.get("key");
+  if (!process.env.CRON_SECRET || key !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const job = url.searchParams.get("job");
+  if (job !== "evening") {
+    return NextResponse.json({ error: "Unknown job" }, { status: 400 });
+  }
+  if (!pushConfigured()) {
+    return NextResponse.json({ ok: true, skipped: "push not configured" });
+  }
+
+  const store = getStore();
+  await store.init();
+  const now = today();
+  const marker = `evening-${now}`;
+  if (await store.getMeta(marker)) {
+    return NextResponse.json({ ok: true, sent: 0, note: "already sent" });
+  }
+  await store.setMeta(marker, "1");
+
+  // Walk every plan that has a member, and nudge the members who are short.
+  const chapters = allChapters();
+  const plans = await store.listAllPlans();
+  let sent = 0;
+
+  for (const plan of plans) {
+    const cuts = cutsFor(plan.startDay, plan.months);
+    const days = cuts.length - 1;
+    // Which day of the plan today is. Skip plans not running yet or finished.
+    const elapsed =
+      Math.round(
+        (new Date(now).getTime() - new Date(plan.startDay).getTime()) / 86_400_000,
+      ) + 1;
+    if (elapsed < 1 || elapsed > days) continue;
+
+    const [members, completions] = await Promise.all([
+      store.listMembers(plan.id),
+      store.listCompletions(plan.id),
+    ]);
+    const doneToday = new Set(
+      completions.filter((c) => c.day === elapsed).map((c) => c.userId),
+    );
+    const refs = chapters.slice(cuts[elapsed - 1], cuts[elapsed]);
+    const minutes = refs.reduce((a, r) => a + weightOf(r.book, r.chapter), 0);
+    const reading = formatRefs(refs);
+
+    for (const m of members) {
+      if (doneToday.has(m.id)) continue;
+      // Who else is already done, so the nudge carries the friendly pressure
+      // that makes this work at all.
+      const others = members.filter((x) => x.id !== m.id && doneToday.has(x.id));
+      const tail =
+        others.length === 1
+          ? ` ${others[0].displayName} has already read.`
+          : others.length > 1
+            ? ` ${others.length} others have already read.`
+            : "";
+      await sendToUser(m.id, {
+        title: `Today's reading is still open`,
+        body: `${reading}, about ${formatMinutes(minutes)}.${tail}`,
+        url: "/",
+        tag: "evening",
+      });
+      sent += 1;
+    }
+  }
+
+  return NextResponse.json({ ok: true, plans: plans.length, sent });
+}
