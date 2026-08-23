@@ -88,6 +88,17 @@ Ticking is applied locally the moment you tap and reconciled when the server
 answers, so the box fills in about 70 ms rather than after a round trip, and
 four chapters tapped quickly register as four rather than one.
 
+## The mark
+
+`design/logo-source.png` is the artwork and the only source of truth. Every icon
+is cut from it by `npm run icons`, which lifts the mark off its own paper and
+sets it on flat ground before resizing. The lift matters: the source is a render,
+so its paper carries grain and a vignette, and padding it left a visible seam.
+Keying the ink to transparency clears the seam, the grain and the vignette in one
+pass without moving a single line of the drawing.
+
+To change the logo, replace that file and run `npm run icons`.
+
 ## Stack
 
 Next.js 16 (App Router) - React 19 - TypeScript - Tailwind v4 - Postgres on
