@@ -186,9 +186,25 @@ export function TodayTab({
             {isToday ? "Verse of the day" : "Verse for this day"}
           </p>
           {verseText ? (
-            <blockquote className="serif mt-3 text-lg leading-relaxed text-ink">
-              {verseText}
-            </blockquote>
+            <>
+              <blockquote className="serif mt-3 text-lg leading-relaxed text-ink">
+                {verseText}
+              </blockquote>
+              {/* Crossway's terms require the notice and the link on any page
+                  that shows their text. */}
+              <p className="mt-2 text-xs text-ink-3">
+                Scripture quotation from the ESV Bible, copyright 2001 by
+                Crossway.{" "}
+                <a
+                  href="https://www.esv.org"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  esv.org
+                </a>
+              </p>
+            </>
           ) : (
             <p className="mt-3 text-sm text-ink-2">
               Tap through to read it in {plan.translation}.
