@@ -5,7 +5,8 @@
 export type GlyphName =
   | "book" | "check" | "flame" | "chart" | "calendar" | "seal" | "users"
   | "settings" | "arrow-right" | "arrow-up" | "arrow-down" | "clock" | "plus"
-  | "note" | "bell" | "sun" | "moon" | "chevron" | "close" | "trash"
+  | "note" | "bell" | "sun" | "moon" | "chevron" | "chevron-left" | "chevron-right"
+  | "close" | "trash"
   | "link" | "scroll" | "trophy" | "quote" | "logout" | "copy";
 
 export function Glyph({
@@ -147,6 +148,18 @@ export function Glyph({
       return (
         <svg {...common}>
           <path d="m8 10 4 4 4-4" />
+        </svg>
+      );
+    case "chevron-left":
+      return (
+        <svg {...common}>
+          <path d="m14 6-6 6 6 6" />
+        </svg>
+      );
+    case "chevron-right":
+      return (
+        <svg {...common}>
+          <path d="m10 6 6 6-6 6" />
         </svg>
       );
     case "close":

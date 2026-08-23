@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { Glyph } from "./Glyph";
-import { TRANSLATIONS, type TranslationId } from "@/lib/bible";
-import { TOTAL_WEIGHT_MINUTES } from "@/lib/weights";
 import { MAX_MONTHS, MIN_MONTHS, normalizeCode } from "@/lib/types";
-import { formatMinutes, planLengthDays, today } from "@/lib/dates";
 
 /** First run: either start a plan or join the one a friend already started. */
 export function Onboarding({
@@ -14,18 +11,14 @@ export function Onboarding({
   onJoin,
 }: {
   busy: boolean;
-  onCreate: (name: string, months: number, translation: TranslationId) => Promise<string | null>;
+  onCreate: (name: string, months: number) => Promise<string | null>;
   onJoin: (code: string) => Promise<string | null>;
 }) {
   const [tab, setTab] = useState<"create" | "join">("create");
   const [name, setName] = useState("");
   const [months, setMonths] = useState(12);
-  const [translation, setTranslation] = useState<TranslationId>("ESV");
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const days = planLengthDays(today(), months);
-  const perDay = TOTAL_WEIGHT_MINUTES / days;
 
   const field =
     "mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-3.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
@@ -64,7 +57,7 @@ export function Onboarding({
           className="mt-6"
           onSubmit={async (e) => {
             e.preventDefault();
-            setError(await onCreate(name, months, translation));
+            setError(await onCreate(name, months));
           }}
         >
           <label htmlFor="plan-name" className="eyebrow block text-ink-2">
@@ -97,30 +90,6 @@ export function Onboarding({
               {months} {months === 1 ? "month" : "months"}
             </span>
           </div>
-          <p className="mt-3 rounded-xl border border-line bg-page-2 px-4 py-3 text-sm text-ink-2">
-            About <span className="font-semibold text-ink">{formatMinutes(perDay)}</span> a day
-            across <span className="tnum">{days}</span> days.
-            {perDay > 150 && " That is a serious pace."}
-          </p>
-
-          <label className="eyebrow mt-6 block text-ink-2">Translation</label>
-          <div className="mt-2 flex gap-2">
-            {TRANSLATIONS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTranslation(t.id)}
-                className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                  translation === t.id
-                    ? "border-accent bg-accent-soft text-ink"
-                    : "border-line-2 bg-page text-ink-2"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
           {error && (
             <p role="alert" className="mt-4 text-sm font-medium text-warn">
               {error}

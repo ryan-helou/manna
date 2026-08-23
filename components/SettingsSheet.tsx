@@ -4,9 +4,6 @@ import { useState } from "react";
 import { Sheet } from "./Sheet";
 import { Glyph } from "./Glyph";
 import { NotificationSetup } from "./NotificationSetup";
-import { TRANSLATIONS, type TranslationId } from "@/lib/bible";
-import { TOTAL_WEIGHT_MINUTES } from "@/lib/weights";
-import { formatMinutes, planLengthDays } from "@/lib/dates";
 import { MAX_MONTHS, MIN_MONTHS } from "@/lib/types";
 import type { ActivePlan, User } from "@/lib/types";
 
@@ -29,21 +26,18 @@ export function SettingsSheet({
   onTheme: (t: "system" | "light" | "dark") => void;
   busy: boolean;
   onClose: () => void;
-  onSavePlan: (patch: { name?: string; months?: number; translation?: TranslationId }) => Promise<string | null>;
+  onSavePlan: (patch: { name?: string; months?: number }) => Promise<string | null>;
   onToggleEdit: (userId: string, canEdit: boolean) => void;
   onSignOut: () => void;
 }) {
   const [name, setName] = useState(plan.name);
   const [months, setMonths] = useState(plan.months);
-  const [translation, setTranslation] = useState<TranslationId>(plan.translation);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const isCreator = plan.creatorId === me.id;
-  const days = planLengthDays(plan.startDay, months);
-  const perDay = TOTAL_WEIGHT_MINUTES / days;
-  const dirty = name !== plan.name || months !== plan.months || translation !== plan.translation;
+  const dirty = name !== plan.name || months !== plan.months;
 
   const field =
     "mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-3 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none disabled:opacity-60";
@@ -102,34 +96,11 @@ export function SettingsSheet({
               {months} {months === 1 ? "month" : "months"}
             </span>
           </div>
-          <p className="mt-2 text-sm text-ink-2">
-            About <span className="font-semibold text-ink">{formatMinutes(perDay)}</span> a day
-            across <span className="tnum">{days}</span> days.
-          </p>
           {months !== plan.months && (
             <p className="mt-2 rounded-lg border border-line bg-page-2 px-3 py-2 text-sm text-ink-2">
               Changing the length rebuilds the schedule. What you have already read stays read.
             </p>
           )}
-
-          <p className="eyebrow mt-5 text-ink-2">Translation</p>
-          <div className="mt-2 flex gap-2">
-            {TRANSLATIONS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                disabled={!plan.canEdit}
-                onClick={() => setTranslation(t.id)}
-                className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition disabled:opacity-60 ${
-                  translation === t.id
-                    ? "border-accent bg-accent-soft text-ink"
-                    : "border-line-2 bg-page text-ink-2"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
 
           {!plan.canEdit && (
             <p className="mt-3 text-sm text-ink-3">
@@ -148,7 +119,7 @@ export function SettingsSheet({
             <button
               disabled={busy}
               onClick={async () => {
-                const err = await onSavePlan({ name, months, translation });
+                const err = await onSavePlan({ name, months });
                 setError(err);
                 if (!err) {
                   setSaved(true);

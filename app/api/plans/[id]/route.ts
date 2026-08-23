@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getStore } from "@/lib/db";
 import { currentUser } from "@/lib/session";
 import { readState } from "@/lib/state";
-import { isTranslation } from "@/lib/bible";
 import { isMonths, MAX_MONTHS, MAX_NAME_LENGTH, MIN_MONTHS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -31,9 +30,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const body = (await req.json().catch(() => ({}))) as {
     name?: unknown;
     months?: unknown;
-    translation?: unknown;
   };
-  const patch: { name?: string; months?: number; translation?: "ESV" | "NKJV" } = {};
+  const patch: { name?: string; months?: number } = {};
 
   if (body.name !== undefined) {
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -52,13 +50,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     }
     patch.months = months;
   }
-  if (body.translation !== undefined) {
-    if (!isTranslation(body.translation)) {
-      return NextResponse.json({ error: "Pick ESV or NKJV." }, { status: 400 });
-    }
-    patch.translation = body.translation;
-  }
-
   await store.updatePlan(id, patch);
   return NextResponse.json(await readState());
 }

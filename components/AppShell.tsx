@@ -11,7 +11,6 @@ import { Glyph, type GlyphName } from "./Glyph";
 import { useManna } from "./useManna";
 import { today as deviceToday, type DayKey } from "@/lib/dates";
 import type { AppState } from "@/lib/types";
-import type { TranslationId } from "@/lib/bible";
 
 type Tab = "today" | "together" | "journey";
 type Theme = "system" | "light" | "dark";
@@ -92,9 +91,7 @@ export function AppShell({
     return (
       <Onboarding
         busy={busy}
-        onCreate={(name, months, translation) =>
-          post("/api/plans", { name, months, translation })
-        }
+        onCreate={(name, months) => post("/api/plans", { name, months })}
         onJoin={(code) => post("/api/plans/join", { code })}
       />
     );
@@ -169,7 +166,7 @@ export function AppShell({
           onTheme={applyTheme}
           busy={busy}
           onClose={() => setSettingsOpen(false)}
-          onSavePlan={(patch: { name?: string; months?: number; translation?: TranslationId }) =>
+          onSavePlan={(patch: { name?: string; months?: number }) =>
             send(`/api/plans/${plan.id}`, { method: "PATCH", body: JSON.stringify(patch) })
           }
           onToggleEdit={(userId, canEdit) =>

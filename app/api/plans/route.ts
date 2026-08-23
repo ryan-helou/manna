@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getStore } from "@/lib/db";
 import { currentUser } from "@/lib/session";
 import { readState, setActivePlan } from "@/lib/state";
-import { DEFAULT_TRANSLATION, isTranslation } from "@/lib/bible";
+import { DEFAULT_TRANSLATION } from "@/lib/bible";
 import { today } from "@/lib/dates";
 import { isMonths, MAX_MONTHS, MAX_NAME_LENGTH, MIN_MONTHS } from "@/lib/types";
 
@@ -15,11 +15,9 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as {
     name?: unknown;
     months?: unknown;
-    translation?: unknown;
   };
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const months = Number(body.months);
-  const translation = isTranslation(body.translation) ? body.translation : DEFAULT_TRANSLATION;
 
   if (!name || name.length > MAX_NAME_LENGTH) {
     return NextResponse.json(
@@ -39,7 +37,8 @@ export async function POST(req: Request) {
     name,
     months,
     startDay: today(),
-    translation,
+    // Fixed rather than chosen: one less decision on the way in.
+    translation: DEFAULT_TRANSLATION,
     creatorId: me.id,
   });
   await store.addMember(plan.id, me.id, true);
