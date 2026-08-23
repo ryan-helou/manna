@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Glyph } from "./Glyph";
 import { DailyQuiz } from "./DailyQuiz";
 import { chapterUrl, formatRefs, type Ref } from "@/lib/bible";
@@ -10,7 +10,7 @@ import {
   planEnded, startDayFor, streakFor, totalDays, verseOfTheDay,
 } from "@/lib/progress";
 import { MAX_NOTE_LENGTH } from "@/lib/types";
-import type { ActivePlan, QuizQuestion, User, VerseOfDay } from "@/lib/types";
+import type { ActivePlan, Note, QuizQuestion, User, VerseOfDay } from "@/lib/types";
 import { formatMinutes } from "@/lib/dates";
 
 export function TodayTab({
@@ -67,7 +67,38 @@ export function TodayTab({
 
   const [noteDraft, setNoteDraft] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
-  const dayNotes = plan.notes.filter((n) => n.day === day);
+
+  // The payload carries today's notes only, because a year of a dozen people
+  // writing is too much to send on every tap. Any other day fetches its own,
+  // rather than showing an empty field over the top of something somebody
+  // already wrote there.
+  // Stamped with the day it belongs to, so a slow reply for a day you have
+  // already navigated away from cannot be shown against the wrong one.
+  const [awayNotes, setAwayNotes] = useState<{ day: number; notes: Note[] } | null>(null);
+  useEffect(() => {
+    if (isToday) return;
+    let live = true;
+    fetch(`/api/notes?planId=${encodeURIComponent(plan.id)}&day=${day}`)
+      .then((r) => (r.ok ? r.json() : { notes: [] }))
+      .then((d: { notes?: Note[] }) => {
+        if (live) setAwayNotes({ day, notes: d.notes ?? [] });
+      })
+      .catch(() => {
+        if (live) setAwayNotes({ day, notes: [] });
+      });
+    return () => {
+      live = false;
+    };
+    // `plan.notes` is a dependency so posting on another day refetches it.
+  }, [isToday, plan.id, day, plan.notes]);
+
+  const loaded = awayNotes?.day === day;
+  const notesLoading = !isToday && !loaded;
+  const dayNotes = isToday
+    ? plan.notes.filter((n) => n.day === day)
+    : loaded
+      ? awayNotes!.notes
+      : [];
   const nameOf = (id: string) =>
     plan.members.find((m) => m.id === id)?.displayName ?? "Someone";
 
@@ -141,16 +172,17 @@ export function TodayTab({
               refr={ref}
               plan={plan}
               read={isChapterRead(plan, me.id, ref)}
-              busy={busy}
               onToggle={(next) => onToggleChapter(ref, next)}
             />
           ))}
         </ul>
 
+        {/* Not disabled while a request is in flight. The tick is applied
+            locally the moment you tap, so blocking the next tap only loses it:
+            three chapters ticked quickly used to register as one. */}
         <button
           onClick={() => onToggleDay(day, !done)}
-          disabled={busy}
-          className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-base font-semibold transition active:scale-[0.99] disabled:opacity-60 ${
+          className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-base font-semibold transition active:scale-[0.99] ${
             done ? "border border-good bg-transparent text-good" : "bg-accent text-page"
           }`}
         >
@@ -256,6 +288,10 @@ export function TodayTab({
           {isToday ? "Notes on today" : `Notes on day ${day}`}
         </p>
 
+        {notesLoading && (
+          <p className="mt-3 text-sm text-ink-3">Loading what was written here.</p>
+        )}
+
         {dayNotes.length > 0 && (
           <ul className="mt-3 space-y-3">
             {dayNotes.map((n) => (
@@ -324,13 +360,11 @@ function ChapterRow({
   refr,
   plan,
   read,
-  busy,
   onToggle,
 }: {
   refr: Ref;
   plan: ActivePlan;
   read: boolean;
-  busy: boolean;
   onToggle: (next: boolean) => void;
 }) {
   return (
@@ -341,10 +375,9 @@ function ChapterRow({
     >
       <button
         onClick={() => onToggle(!read)}
-        disabled={busy}
         aria-pressed={read}
         aria-label={`${read ? "Unmark" : "Mark"} ${refr.book} ${refr.chapter} as read`}
-        className="py-3 pl-4 pr-2 disabled:opacity-60"
+        className="py-3 pl-4 pr-2"
       >
         <span
           className={`flex h-5 w-5 items-center justify-center rounded-md border transition ${

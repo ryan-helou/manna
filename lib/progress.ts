@@ -80,7 +80,19 @@ export function dayProgress(
   userId: string,
   day: number,
 ): { done: number; total: number } {
-  const read = readChapters(plan, userId);
+  return dayProgressWith(readChapters(plan, userId), plan, day);
+}
+
+/**
+ * The same, given a set you already built. The heatmap asks this for every day
+ * of the plan at once, and rebuilding the reader's whole set of chapters inside
+ * each of four hundred cells is four hundred times more work than it needs.
+ */
+export function dayProgressWith(
+  read: Set<string>,
+  plan: ActivePlan,
+  day: number,
+): { done: number; total: number } {
   const chapters = chaptersForDay(plan, day);
   let done = 0;
   for (const c of chapters) if (read.has(key(c.book, c.chapter))) done++;

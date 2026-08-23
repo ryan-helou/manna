@@ -1,7 +1,7 @@
 "use client";
 
 import { formatLongDay, type DayKey } from "@/lib/dates";
-import { dateOfDay, dayProgress, totalDays } from "@/lib/progress";
+import { dateOfDay, dayProgressWith, readChapters, totalDays } from "@/lib/progress";
 import type { ActivePlan } from "@/lib/types";
 
 /**
@@ -19,6 +19,8 @@ export function Heatmap({
   today: DayKey;
 }) {
   const days = totalDays(plan);
+  // Built once for the whole grid rather than inside every cell.
+  const read = readChapters(plan, userId);
 
   // Pad the front so the first column starts on a Sunday.
   const first = new Date(plan.startDay);
@@ -40,7 +42,7 @@ export function Heatmap({
             <div key={wi} className="flex flex-col gap-[3px]">
               {week.map((cell, di) => {
                 if (!cell) return <span key={di} className="h-2.5 w-2.5" />;
-                const { done, total } = dayProgress(plan, userId, cell.day);
+                const { done, total } = dayProgressWith(read, plan, cell.day);
                 const isDone = total > 0 && done === total;
                 const isPartial = done > 0 && !isDone;
                 const isFuture = cell.date > today;

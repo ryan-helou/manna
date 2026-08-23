@@ -6,6 +6,33 @@ import { MAX_NOTE_LENGTH } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The notes on one day.
+ *
+ * The state payload carries only today's, because a year of a dozen people
+ * writing would put notes where the chapter ticks used to be. Navigating to
+ * another day fetches that day's instead of showing an empty field over the top
+ * of something somebody wrote.
+ */
+export async function GET(req: Request) {
+  const me = await currentUser();
+  if (!me) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+
+  const url = new URL(req.url);
+  const planId = url.searchParams.get("planId") ?? "";
+  const day = Number(url.searchParams.get("day"));
+  const store = getStore();
+
+  if (!(await store.isMember(planId, me.id))) {
+    return NextResponse.json({ error: "You are not in that plan." }, { status: 403 });
+  }
+  if (!Number.isInteger(day) || day < 1) {
+    return NextResponse.json({ error: "That day is not in the plan." }, { status: 400 });
+  }
+  const notes = (await store.listNotes(planId)).filter((n) => n.day === day);
+  return NextResponse.json({ notes });
+}
+
 /** Anyone in the plan can write on a day; everyone in the plan can read it. */
 export async function POST(req: Request) {
   const me = await currentUser();

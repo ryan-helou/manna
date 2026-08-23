@@ -13,9 +13,30 @@ import { useManna } from "./useManna";
 import { today as deviceToday, type DayKey } from "@/lib/dates";
 import { milestonesFor, type Milestone } from "@/lib/progress";
 import type { AppState } from "@/lib/types";
-import type { Ref } from "@/lib/bible";
+import { allChapters, type Ref } from "@/lib/bible";
+import { today as todayKey } from "@/lib/dates";
 
 type Tab = "today" | "together" | "journey";
+
+/**
+ * Add or remove chapter ticks in the local state, so the box fills under the
+ * thumb rather than after the network. Replaced wholesale by the server's reply.
+ */
+function applyReads(state: AppState, refs: Ref[], done: boolean): AppState {
+  const plan = state.active;
+  const me = state.me;
+  if (!plan || !me) return state;
+  const touched = new Set(refs.map((r) => `${r.book} ${r.chapter}`));
+  const reads = done
+    ? [
+        ...plan.reads,
+        ...refs
+          .filter((r) => !plan.reads.some((x) => x.book === r.book && x.chapter === r.chapter))
+          .map((r) => ({ userId: me.id, book: r.book, chapter: r.chapter, readOn: todayKey() })),
+      ]
+    : plan.reads.filter((r) => !touched.has(`${r.book} ${r.chapter}`));
+  return { ...state, active: { ...plan, reads } };
+}
 type Theme = "system" | "light" | "dark";
 
 const TABS: { id: Tab; label: string; glyph: GlyphName }[] = [
@@ -31,7 +52,7 @@ export function AppShell({
   initial: AppState;
   serverToday: DayKey;
 }) {
-  const { state, busy, send } = useManna(initial);
+  const { state, busy, send, sendOptimistic } = useManna(initial);
   const [tab, setTab] = useState<Tab>("today");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>("system");
@@ -156,14 +177,21 @@ export function AppShell({
             today={refDay}
             busy={busy}
             onToggleDay={(day, done) =>
-              void post("/api/readings", { planId: plan.id, day, done })
+              void sendOptimistic(
+                (s) => applyReads(s, allChapters().slice(plan.cuts[day - 1], plan.cuts[day]), done),
+                "/api/readings",
+                { method: "POST", body: JSON.stringify({ planId: plan.id, day, done }) },
+              )
             }
             onToggleChapter={(ref: Ref, done) =>
-              void post("/api/readings", {
-                planId: plan.id,
-                book: ref.book,
-                chapter: ref.chapter,
-                done,
+              void sendOptimistic((s) => applyReads(s, [ref], done), "/api/readings", {
+                method: "POST",
+                body: JSON.stringify({
+                  planId: plan.id,
+                  book: ref.book,
+                  chapter: ref.chapter,
+                  done,
+                }),
               })
             }
             onAddNote={(day, body) => post("/api/notes", { planId: plan.id, day, body })}

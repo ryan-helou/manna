@@ -80,6 +80,10 @@ close to a megabyte on a finished plan, re-sent on every tap because mutations
 return the state. Your own ticks travel now; everyone else arrives as a computed
 standing. Twelve people a third of the way through a year is 44 KB.
 
+Ticking is applied locally the moment you tap and reconciled when the server
+answers, so the box fills in about 70 ms rather than after a round trip, and
+four chapters tapped quickly register as four rather than one.
+
 ## Stack
 
 Next.js 16 (App Router) - React 19 - TypeScript - Tailwind v4 - Postgres on
