@@ -55,9 +55,10 @@ first creates it and picks a duration of 1 to 13 whole months, and the schedule
 is rebuilt whenever that changes. After that there is nothing to join and no
 code to pass around: signing in puts you in it.
 
-Because signing in is the only door, registration is the only lock. Set
-`SIGNUP_SECRET` and new accounts need that one shared word; existing people
-never see it again. Leave it unset locally, where there is nothing to protect.
+Registration is open: anyone who reaches the URL can make an account and is then
+in the plan. Setting `SIGNUP_SECRET` puts one shared word in front of
+registration if that is ever wanted; signing in never asks for it. It is
+currently unset.
 
 The creator can remove someone, which takes their reading and their notes with
 them and stops them signing back in.
