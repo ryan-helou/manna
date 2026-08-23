@@ -14,8 +14,11 @@ export const dynamic = "force-dynamic";
  * shared secret.
  *   ?job=evening — nudge anyone who has not logged today's reading yet
  *
- * Deduped per plan per day through the meta store, so a double fire never
- * double notifies.
+ * Deduped per reader per day through the meta store, so a double fire never
+ * double notifies. The marker is written per person as each nudge goes out
+ * rather than once for the whole run: a run that sends nothing must not burn
+ * the day for everyone, and a run that dies halfway must still nudge the people
+ * it had not reached yet.
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -34,16 +37,12 @@ export async function GET(req: Request) {
   const store = getStore();
   await store.init();
   const now = today();
-  const marker = `evening-${now}`;
-  if (await store.getMeta(marker)) {
-    return NextResponse.json({ ok: true, sent: 0, note: "already sent" });
-  }
-  await store.setMeta(marker, "1");
 
   // Walk every plan that has a member, and nudge the members who are short.
   const chapters = allChapters();
   const plans = await store.listAllPlans();
   let sent = 0;
+  let skipped = 0;
 
   for (const plan of plans) {
     const cuts = cutsFor(plan.startDay, plan.months);
@@ -68,6 +67,11 @@ export async function GET(req: Request) {
 
     for (const m of members) {
       if (doneToday.has(m.id)) continue;
+      const marker = `evening:${plan.id}:${m.id}:${now}`;
+      if (await store.getMeta(marker)) {
+        skipped += 1;
+        continue;
+      }
       // Who else is already done, so the nudge carries the friendly pressure
       // that makes this work at all.
       const others = members.filter((x) => x.id !== m.id && doneToday.has(x.id));
@@ -83,9 +87,10 @@ export async function GET(req: Request) {
         url: "/",
         tag: "evening",
       });
+      await store.setMeta(marker, "1");
       sent += 1;
     }
   }
 
-  return NextResponse.json({ ok: true, plans: plans.length, sent });
+  return NextResponse.json({ ok: true, plans: plans.length, sent, skipped });
 }
