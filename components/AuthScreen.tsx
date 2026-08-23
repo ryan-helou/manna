@@ -62,7 +62,6 @@ export function AuthScreen({
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="next"
-          placeholder="ryan"
           className={field}
         />
 
