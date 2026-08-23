@@ -60,7 +60,10 @@ export async function readState(): Promise<AppState> {
     // Unless they were removed from it, in which case signing in again must not
     // quietly undo that.
     if (shared && !(await store.isRemoved(shared.id, me.id))) {
-      await store.addMember(shared.id, me.id, false, today());
+      // Never before the plan itself begins. Signing up the day before it starts
+      // should not put you a day ahead of everybody else.
+      const now = today();
+      await store.addMember(shared.id, me.id, false, now < shared.startDay ? shared.startDay : now);
       plans = await store.listPlansFor(me.id);
     }
   }
