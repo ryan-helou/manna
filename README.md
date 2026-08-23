@@ -39,6 +39,9 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
   milestone badges for each canonical section (with a moment when you finish
   one), and running stats: minutes invested, chapters and books finished,
   average pace, projected finish.
+- **Pull to refresh.** Drag down from the top of any tab. A home-screen app has
+  no browser chrome, so the operating system's gesture never fires and there is
+  no reload button to fall back on.
 - **Notes.** A shared field on each day's reading. Anyone in the plan can write,
   everyone can read. Flat, no threads.
 - **Verse of the day.** The strongest verse of today's chapters, scored on

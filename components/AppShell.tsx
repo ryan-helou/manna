@@ -8,6 +8,7 @@ import { TogetherTab } from "./TogetherTab";
 import { JourneyTab } from "./JourneyTab";
 import { SettingsSheet } from "./SettingsSheet";
 import { MilestoneCard } from "./MilestoneCard";
+import { PullToRefresh } from "./PullToRefresh";
 import { Glyph, type GlyphName } from "./Glyph";
 import { useManna } from "./useManna";
 import { today as deviceToday, type DayKey } from "@/lib/dates";
@@ -127,6 +128,15 @@ export function AppShell({
     } catch {}
   }, []);
 
+  // Pulling down re-reads the calendar day as well as the plan: a home-screen
+  // app is usually resumed rather than loaded, and it can be resumed on a
+  // different day than it was left on. Declared up here with the other hooks,
+  // above the early returns for the signed-out and no-plan screens.
+  const refresh = useCallback(async () => {
+    setRefDay(deviceToday());
+    await send("/api/session");
+  }, [send]);
+
   const post = useCallback(
     (url: string, body: unknown) =>
       send(url, { method: "POST", body: JSON.stringify(body) }),
@@ -155,6 +165,8 @@ export function AppShell({
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4">
+      <PullToRefresh onRefresh={refresh} />
+
       {/* ---- top bar ---- */}
       <header className="flex items-center justify-between gap-3 py-4">
         <PlanSwitcher
