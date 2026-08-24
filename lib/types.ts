@@ -120,8 +120,9 @@ export interface ActivePlan {
   reads: ChapterRead[];
   /** Everyone in the plan, most finished first. */
   standings: Standing[];
-  /** Notes on the day currently being viewed. Others are fetched on demand. */
-  notes: Note[];
+  /** Threads on the day being viewed, replies and reactions included. Other
+   *  days are fetched on demand. */
+  notes: FeedNote[];
 }
 
 /** Today's shared verse. `text` is null unless an ESV API key is configured. */

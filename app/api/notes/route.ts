@@ -4,11 +4,12 @@ import { currentUser } from "@/lib/session";
 import { cutsFor, readState } from "@/lib/state";
 import { MAX_NOTE_LENGTH } from "@/lib/types";
 import { allChapters } from "@/lib/bible";
+import { buildThreads } from "@/lib/notes";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The notes on one day.
+ * The threads on one day, replies and reactions included.
  *
  * The state payload carries only today's, because a year of a dozen people
  * writing would put notes where the chapter ticks used to be. Navigating to
@@ -27,10 +28,23 @@ export async function GET(req: Request) {
   if (!(await store.isMember(planId, me.id))) {
     return NextResponse.json({ error: "You are not in that plan." }, { status: 403 });
   }
+  const plan = await store.getPlan(planId);
+  if (!plan) return NextResponse.json({ error: "No such plan." }, { status: 404 });
   if (!Number.isInteger(day) || day < 1) {
     return NextResponse.json({ error: "That day is not in the plan." }, { status: 400 });
   }
-  const notes = (await store.listNotes(planId)).filter((n) => n.day === day);
+
+  const [all, reactions, members] = await Promise.all([
+    store.listNotes(planId),
+    store.listReactions(planId),
+    store.listMembers(planId),
+  ]);
+  const notes = buildThreads(
+    all.filter((n) => n.day === day),
+    reactions,
+    members,
+    cutsFor(plan.startDay, plan.months),
+  );
   return NextResponse.json({ notes });
 }
 

@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import { Glyph } from "./Glyph";
 import { DailyQuiz } from "./DailyQuiz";
+import { ChapterNotesSheet } from "./ChapterNotesSheet";
+import { NoteThread } from "./NoteThread";
 import { chapterUrl, formatRefs, type Ref } from "@/lib/bible";
-import { formatDay, formatDayRelative, formatLongDay, timeAgo, type DayKey } from "@/lib/dates";
+import { formatDay, formatDayRelative, formatLongDay, type DayKey } from "@/lib/dates";
 import {
   chaptersForDay, currentDay, dateOfDay, dayProgress, isChapterRead, paceFor,
   missedDays, planEnded, startDayFor, streakFor, totalDays, verseOfTheDay,
 } from "@/lib/progress";
 import { MAX_NOTE_LENGTH } from "@/lib/types";
-import type { ActivePlan, Note, QuizQuestion, User, VerseOfDay } from "@/lib/types";
+import type { ActivePlan, FeedNote, QuizQuestion, User, VerseOfDay } from "@/lib/types";
 import { formatMinutes } from "@/lib/dates";
 
 export function TodayTab({
@@ -25,6 +27,8 @@ export function TodayTab({
   onToggleDay,
   onToggleChapter,
   onAddNote,
+  onReply,
+  onReact,
   onDeleteNote,
 }: {
   plan: ActivePlan;
@@ -38,6 +42,8 @@ export function TodayTab({
   onToggleDay: (day: number, done: boolean) => void;
   onToggleChapter: (ref: Ref, done: boolean) => void;
   onAddNote: (day: number, body: string, ref: Ref | null) => Promise<string | null>;
+  onReply: (parentId: string, body: string) => Promise<string | null>;
+  onReact: (noteId: string, emoji: string) => void;
   onDeleteNote: (id: string) => void;
 }) {
   const days = totalDays(plan);
@@ -67,6 +73,8 @@ export function TodayTab({
   const [noteError, setNoteError] = useState<string | null>(null);
   // Which chapter the note is about. Null means the day's reading as a whole.
   const [noteRef, setNoteRef] = useState<Ref | null>(null);
+  // Which chapter's conversation is open, if any.
+  const [openChapter, setOpenChapter] = useState<Ref | null>(null);
 
   // The payload carries today's notes only, because a year of a dozen people
   // writing is too much to send on every tap. Any other day fetches its own,
@@ -74,13 +82,13 @@ export function TodayTab({
   // already wrote there.
   // Stamped with the day it belongs to, so a slow reply for a day you have
   // already navigated away from cannot be shown against the wrong one.
-  const [awayNotes, setAwayNotes] = useState<{ day: number; notes: Note[] } | null>(null);
+  const [awayNotes, setAwayNotes] = useState<{ day: number; notes: FeedNote[] } | null>(null);
   useEffect(() => {
     if (isToday) return;
     let live = true;
     fetch(`/api/notes?planId=${encodeURIComponent(plan.id)}&day=${day}`)
       .then((r) => (r.ok ? r.json() : { notes: [] }))
-      .then((d: { notes?: Note[] }) => {
+      .then((d: { notes?: FeedNote[] }) => {
         if (live) setAwayNotes({ day, notes: d.notes ?? [] });
       })
       .catch(() => {
@@ -99,8 +107,6 @@ export function TodayTab({
     : loaded
       ? awayNotes!.notes
       : [];
-  const nameOf = (id: string) =>
-    plan.members.find((m) => m.id === id)?.displayName ?? "Someone";
 
   // The verse is picked from the day's own chapters, so it works for any day we
   // are looking at. Only today's arrives with its text already fetched.
@@ -172,7 +178,11 @@ export function TodayTab({
               refr={ref}
               plan={plan}
               read={isChapterRead(plan, me.id, ref)}
+              comments={dayNotes.filter(
+                (n) => n.book === ref.book && n.chapter === ref.chapter,
+              ).length}
               onToggle={(next) => onToggleChapter(ref, next)}
+              onOpenNotes={() => setOpenChapter(ref)}
             />
           ))}
         </ul>
@@ -320,6 +330,23 @@ export function TodayTab({
         </section>
       )}
 
+      {openChapter && (
+        <ChapterNotesSheet
+          plan={plan}
+          me={me}
+          refr={openChapter}
+          notes={dayNotes.filter(
+            (n) => n.book === openChapter.book && n.chapter === openChapter.chapter,
+          )}
+          busy={busy}
+          onClose={() => setOpenChapter(null)}
+          onAdd={(body, ref) => onAddNote(day, body, ref)}
+          onReply={onReply}
+          onReact={onReact}
+          onDelete={onDeleteNote}
+        />
+      )}
+
       {/* ---- the daily check, today only ---- */}
       {isToday && <DailyQuiz questions={quiz} planId={plan.id} day={day} />}
 
@@ -335,27 +362,17 @@ export function TodayTab({
         )}
 
         {dayNotes.length > 0 && (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-3 space-y-5">
             {dayNotes.map((n) => (
-              <li key={n.id} className="rounded-xl border border-line bg-page-2 px-4 py-3">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm font-semibold text-ink">{nameOf(n.userId)}</span>
-                  <span className="flex items-center gap-2 text-xs text-ink-3">
-                    <span className="tnum">{timeAgo(n.createdAt)}</span>
-                    {n.userId === me.id && (
-                      <button
-                        onClick={() => onDeleteNote(n.id)}
-                        aria-label="Delete note"
-                        className="text-ink-3 transition hover:text-warn"
-                      >
-                        <Glyph name="trash" className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap text-ink-2">
-                  {n.body}
-                </p>
+              <li key={n.id}>
+                <NoteThread
+                  note={n}
+                  me={me}
+                  busy={busy}
+                  onReply={onReply}
+                  onReact={onReact}
+                  onDelete={onDeleteNote}
+                />
               </li>
             ))}
           </ul>
@@ -440,20 +457,30 @@ export function TodayTab({
   );
 }
 
+/**
+ * A chapter on the day's card. Three targets, deliberately separate: the box
+ * ticks it read, the name opens what everyone has written about it, and the link
+ * opens the text itself. It used to be one link across the whole row, which left
+ * nowhere to put a conversation.
+ */
 function ChapterRow({
   refr,
   plan,
   read,
+  comments,
   onToggle,
+  onOpenNotes,
 }: {
   refr: Ref;
   plan: ActivePlan;
   read: boolean;
+  comments: number;
   onToggle: (next: boolean) => void;
+  onOpenNotes: () => void;
 }) {
   return (
     <li
-      className={`flex items-center gap-1 rounded-xl border bg-page-2 pr-2 transition ${
+      className={`flex items-center gap-1 rounded-xl border bg-page-2 pr-1 transition ${
         read ? "border-good/40" : "border-line"
       }`}
     >
@@ -473,11 +500,11 @@ function ChapterRow({
           </span>
         </span>
       </button>
-      <a
-        href={chapterUrl(refr, plan.translation)}
-        target="_blank"
-        rel="noreferrer"
-        className="group flex flex-1 items-center justify-between gap-3 py-3"
+
+      <button
+        onClick={onOpenNotes}
+        aria-label={`Notes on ${refr.book} ${refr.chapter}`}
+        className="flex flex-1 items-center gap-2 py-3 text-left"
       >
         <span
           className={`serif text-[1.0625rem] font-medium transition ${
@@ -486,7 +513,22 @@ function ChapterRow({
         >
           {refr.book} {refr.chapter}
         </span>
-        <Glyph name="arrow-right" className="h-4 w-4 text-ink-3 transition group-hover:text-accent" />
+        {comments > 0 && (
+          <span className="flex items-center gap-1 rounded-full bg-accent-soft px-1.5 py-0.5 text-[0.6875rem] font-semibold text-accent">
+            <Glyph name="chat" className="h-3 w-3" />
+            <span className="tnum">{comments}</span>
+          </span>
+        )}
+      </button>
+
+      <a
+        href={chapterUrl(refr, plan.translation)}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Open ${refr.book} ${refr.chapter} in ${plan.translation}`}
+        className="rounded-lg p-2.5 text-ink-3 transition hover:bg-page hover:text-accent"
+      >
+        <Glyph name="link" className="h-4 w-4" />
       </a>
     </li>
   );

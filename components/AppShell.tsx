@@ -222,6 +222,10 @@ export function AppShell({
                 ...(ref ? { book: ref.book, chapter: ref.chapter } : {}),
               })
             }
+            onReply={(parentId, body) => post("/api/notes", { planId: plan.id, parentId, body })}
+            onReact={(noteId, emoji) =>
+              void post("/api/notes/react", { planId: plan.id, noteId, emoji })
+            }
             onDeleteNote={(id) =>
               void send(`/api/notes?planId=${encodeURIComponent(plan.id)}&id=${encodeURIComponent(id)}`, {
                 method: "DELETE",

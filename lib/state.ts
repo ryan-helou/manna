@@ -3,12 +3,13 @@ import { cookies } from "next/headers";
 import { getStore } from "./db";
 import { currentUser } from "./session";
 import { partition } from "./schedule";
-import { allChapters, formatRefs } from "./bible";
+import { allChapters } from "./bible";
 import { weightOf } from "./weights";
 import { planLengthDays } from "./dates";
 import { pushConfigured } from "./push";
 import { chaptersForDay, computeStandings, currentDay, verseOfTheDay } from "./progress";
 import { quizForDay } from "./quiz";
+import { buildThreads } from "./notes";
 import { fetchVerseText } from "./verse-text";
 import { today } from "./dates";
 import type { ActivePlan, AppState, FeedNote } from "./types";
@@ -106,43 +107,18 @@ export async function readState(): Promise<AppState> {
       // The feed carries the latest notes across the plan; the day card carries
       // the day you are looking at. Sending every note of a year would put us
       // back where the reads were.
-      const nameOf = new Map(members.map((m) => [m.id, m.displayName]));
-      const chapters = allChapters();
-      const cuts = shell.cuts;
-      const dress = (n: (typeof notes)[number]): FeedNote => ({
-        ...n,
-        authorName: nameOf.get(n.userId) ?? "Someone",
-        reference: n.book
-          ? `${n.book} ${n.chapter}`
-          : formatRefs(chapters.slice(cuts[n.day - 1], cuts[n.day])),
-        reactions: reactions.get(n.id) ?? [],
-        replies: [],
-      });
-
-      // Threads, one level deep. The cap counts openers rather than notes, so a
-      // busy conversation is never cut off halfway down.
-      const repliesTo = new Map<string, FeedNote[]>();
-      for (const n of notes) {
-        if (!n.parentId) continue;
-        if (!repliesTo.has(n.parentId)) repliesTo.set(n.parentId, []);
-        repliesTo.get(n.parentId)!.push(dress(n));
-      }
-      feed = notes
-        .filter((n) => !n.parentId)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, 40)
-        .map((n) => ({
-          ...dress(n),
-          replies: (repliesTo.get(n.id) ?? []).sort((a, b) =>
-            a.createdAt.localeCompare(b.createdAt),
-          ),
-        }));
+      feed = buildThreads(notes, reactions, members, shell.cuts, { limit: 40 });
 
       active = {
         ...shell,
         reads: myReads,
         standings,
-        notes: notes.filter((n) => n.day === day),
+        notes: buildThreads(
+          notes.filter((n) => n.day === day),
+          reactions,
+          members,
+          shell.cuts,
+        ),
       };
       quiz = quizForDay(active.id, day, chaptersForDay(active, day));
       const pick = verseOfTheDay(active, day);

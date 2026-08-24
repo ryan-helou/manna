@@ -42,9 +42,10 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
 - **Pull to refresh.** Drag down from the top of any tab. A home-screen app has
   no browser chrome, so the operating system's gesture never fires and there is
   no reload button to fall back on.
-- **Notes.** A tab of everything the group has written, gathered under the
-  passage it was about. Comment on a whole day or on one chapter, reply to
-  anyone, and react with one of six emoji. Threads are one level deep.
+- **Notes.** Tap a chapter's name on the day card to open what everyone has
+  written about it and add your own. There is also a tab gathering every
+  conversation under the passage it was about. Reply to anyone, react with one of
+  six emoji. Threads are one level deep.
 - **Verse of the day.** The strongest verse of today's chapters, scored on
   whether it stands on its own, and the same for everyone reading that day.
 - **A daily check.** Three multiple choice questions on what you just read,
