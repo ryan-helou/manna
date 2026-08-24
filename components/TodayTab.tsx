@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Glyph } from "./Glyph";
 import { DailyQuiz } from "./DailyQuiz";
-import { ChapterNotesSheet } from "./ChapterNotesSheet";
+import { ChapterPage } from "./ChapterPage";
 import { NoteThread } from "./NoteThread";
 import { chapterUrl, formatRefs, type Ref } from "@/lib/bible";
 import { formatDay, formatDayRelative, formatLongDay, type DayKey } from "@/lib/dates";
@@ -112,6 +112,27 @@ export function TodayTab({
   // are looking at. Only today's arrives with its text already fetched.
   const pick = verseOfTheDay(plan, day);
   const verseText = isToday && verse ? verse.text : null;
+
+  if (openChapter) {
+    return (
+      <ChapterPage
+        plan={plan}
+        me={me}
+        refr={openChapter}
+        read={isChapterRead(plan, me.id, openChapter)}
+        notes={dayNotes.filter(
+          (n) => n.book === openChapter.book && n.chapter === openChapter.chapter,
+        )}
+        busy={busy}
+        onBack={() => setOpenChapter(null)}
+        onToggleRead={(next) => onToggleChapter(openChapter, next)}
+        onAdd={(body, ref) => onAddNote(day, body, ref)}
+        onReply={onReply}
+        onReact={onReact}
+        onDelete={onDeleteNote}
+      />
+    );
+  }
 
   return (
     <div className="space-y-5 pb-4">
@@ -328,23 +349,6 @@ export function TodayTab({
             <Glyph name="link" className="h-3.5 w-3.5" />
           </a>
         </section>
-      )}
-
-      {openChapter && (
-        <ChapterNotesSheet
-          plan={plan}
-          me={me}
-          refr={openChapter}
-          notes={dayNotes.filter(
-            (n) => n.book === openChapter.book && n.chapter === openChapter.chapter,
-          )}
-          busy={busy}
-          onClose={() => setOpenChapter(null)}
-          onAdd={(body, ref) => onAddNote(day, body, ref)}
-          onReply={onReply}
-          onReact={onReact}
-          onDelete={onDeleteNote}
-        />
       )}
 
       {/* ---- the daily check, today only ---- */}
