@@ -77,11 +77,12 @@ export async function readState(): Promise<AppState> {
   let quiz: AppState["quiz"] = [];
   let feed: FeedNote[] = [];
   if (chosen) {
-    const [plan, members, reads, notes] = await Promise.all([
+    const [plan, members, reads, notes, reactions] = await Promise.all([
       store.getPlan(chosen.id),
       store.listMembers(chosen.id),
       store.listReads(chosen.id),
       store.listNotes(chosen.id),
+      store.listReactions(chosen.id),
     ]);
     if (plan) {
       const mine = members.find((m) => m.id === me.id);
@@ -108,13 +109,33 @@ export async function readState(): Promise<AppState> {
       const nameOf = new Map(members.map((m) => [m.id, m.displayName]));
       const chapters = allChapters();
       const cuts = shell.cuts;
-      feed = [...notes]
+      const dress = (n: (typeof notes)[number]): FeedNote => ({
+        ...n,
+        authorName: nameOf.get(n.userId) ?? "Someone",
+        reference: n.book
+          ? `${n.book} ${n.chapter}`
+          : formatRefs(chapters.slice(cuts[n.day - 1], cuts[n.day])),
+        reactions: reactions.get(n.id) ?? [],
+        replies: [],
+      });
+
+      // Threads, one level deep. The cap counts openers rather than notes, so a
+      // busy conversation is never cut off halfway down.
+      const repliesTo = new Map<string, FeedNote[]>();
+      for (const n of notes) {
+        if (!n.parentId) continue;
+        if (!repliesTo.has(n.parentId)) repliesTo.set(n.parentId, []);
+        repliesTo.get(n.parentId)!.push(dress(n));
+      }
+      feed = notes
+        .filter((n) => !n.parentId)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, 60)
+        .slice(0, 40)
         .map((n) => ({
-          ...n,
-          authorName: nameOf.get(n.userId) ?? "Someone",
-          reference: formatRefs(chapters.slice(cuts[n.day - 1], cuts[n.day])),
+          ...dress(n),
+          replies: (repliesTo.get(n.id) ?? []).sort((a, b) =>
+            a.createdAt.localeCompare(b.createdAt),
+          ),
         }));
 
       active = {

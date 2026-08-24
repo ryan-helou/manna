@@ -5,8 +5,7 @@ import { Glyph } from "./Glyph";
 import { PersonSheet } from "./PersonSheet";
 import { formatMinutes, type DayKey } from "@/lib/dates";
 import { totalDays } from "@/lib/progress";
-import { timeAgo } from "@/lib/dates";
-import type { ActivePlan, FeedNote, User } from "@/lib/types";
+import type { ActivePlan, User } from "@/lib/types";
 
 /**
  * Everyone in the plan, ordered by how far through they are.
@@ -20,12 +19,10 @@ import type { ActivePlan, FeedNote, User } from "@/lib/types";
 export function TogetherTab({
   plan,
   me,
-  feed,
   today,
 }: {
   plan: ActivePlan;
   me: User;
-  feed: FeedNote[];
   today: DayKey;
 }) {
   const board = plan.standings;
@@ -188,35 +185,6 @@ export function TogetherTab({
         <p className="mt-1.5 text-xs text-ink-3">Tap anyone to see how they are going.</p>
       </section>
 
-      {/* ---- what people have been writing ---- */}
-      <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "120ms" }}>
-        <p className="eyebrow flex items-center gap-1.5 text-ink-2">
-          <Glyph name="note" className="h-3.5 w-3.5" />
-          Lately
-        </p>
-        {feed.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-2">
-            Nothing written yet. Notes you leave on a day show up here for everyone.
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {feed.map((n) => (
-              <li key={n.id} className="rounded-xl border border-line bg-page-2 px-4 py-3">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-sm font-semibold text-ink">{n.authorName}</span>
-                  <span className="stat shrink-0 text-xs text-ink-3">{timeAgo(n.createdAt)}</span>
-                </div>
-                <p className="serif mt-0.5 text-xs text-ink-3">
-                  Day {n.day} &middot; {n.reference}
-                </p>
-                <p className="mt-1.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap text-ink-2">
-                  {n.body}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
       {lookingAt && (
         <PersonSheet
           plan={plan}

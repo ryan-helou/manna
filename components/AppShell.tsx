@@ -5,6 +5,7 @@ import { AuthScreen } from "./AuthScreen";
 import { Onboarding } from "./Onboarding";
 import { TodayTab } from "./TodayTab";
 import { TogetherTab } from "./TogetherTab";
+import { NotesTab } from "./NotesTab";
 import { JourneyTab } from "./JourneyTab";
 import { SettingsSheet } from "./SettingsSheet";
 import { MilestoneCard } from "./MilestoneCard";
@@ -17,7 +18,7 @@ import type { AppState } from "@/lib/types";
 import { allChapters, type Ref } from "@/lib/bible";
 import { today as todayKey } from "@/lib/dates";
 
-type Tab = "today" | "together" | "journey";
+type Tab = "today" | "notes" | "together" | "journey";
 
 /**
  * Add or remove chapter ticks in the local state, so the box fills under the
@@ -42,6 +43,7 @@ type Theme = "system" | "light" | "dark";
 
 const TABS: { id: Tab; label: string; glyph: GlyphName }[] = [
   { id: "today", label: "Today", glyph: "book" },
+  { id: "notes", label: "Notes", glyph: "chat" },
   { id: "together", label: "Together", glyph: "users" },
   { id: "journey", label: "Journey", glyph: "chart" },
 ];
@@ -212,7 +214,14 @@ export function AppShell({
                 }),
               })
             }
-            onAddNote={(day, body) => post("/api/notes", { planId: plan.id, day, body })}
+            onAddNote={(day, body, ref) =>
+              post("/api/notes", {
+                planId: plan.id,
+                day,
+                body,
+                ...(ref ? { book: ref.book, chapter: ref.chapter } : {}),
+              })
+            }
             onDeleteNote={(id) =>
               void send(`/api/notes?planId=${encodeURIComponent(plan.id)}&id=${encodeURIComponent(id)}`, {
                 method: "DELETE",
@@ -220,9 +229,26 @@ export function AppShell({
             }
           />
         )}
-        {tab === "together" && (
-          <TogetherTab plan={plan} me={state.me} feed={state.feed} today={refDay} />
+        {tab === "notes" && (
+          <NotesTab
+            feed={state.feed}
+            me={state.me}
+            busy={busy}
+            onReply={(parentId, body) =>
+              post("/api/notes", { planId: plan.id, parentId, body })
+            }
+            onReact={(noteId, emoji) =>
+              void post("/api/notes/react", { planId: plan.id, noteId, emoji })
+            }
+            onDelete={(id) =>
+              void send(
+                `/api/notes?planId=${encodeURIComponent(plan.id)}&id=${encodeURIComponent(id)}`,
+                { method: "DELETE" },
+              )
+            }
+          />
         )}
+        {tab === "together" && <TogetherTab plan={plan} me={state.me} today={refDay} />}
         {tab === "journey" && (
           <JourneyTab
             plan={plan}

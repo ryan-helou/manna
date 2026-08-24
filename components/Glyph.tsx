@@ -5,7 +5,7 @@
 export type GlyphName =
   | "book" | "check" | "flame" | "chart" | "calendar" | "seal" | "users"
   | "settings" | "arrow-right" | "arrow-up" | "arrow-down" | "clock" | "plus"
-  | "note" | "bell" | "sun" | "moon" | "chevron" | "chevron-left" | "chevron-right"
+  | "note" | "chat" | "bell" | "sun" | "moon" | "chevron" | "chevron-left" | "chevron-right"
   | "close" | "trash"
   | "link" | "scroll" | "trophy" | "quote" | "logout" | "copy";
 
@@ -122,6 +122,12 @@ export function Glyph({
         <svg {...common}>
           <path d="M5 4.5h14v15l-3.5-2.5L12 19.5 8.5 17 5 19.5Z" />
           <path d="M8.5 9h7M8.5 12.5h4.5" />
+        </svg>
+      );
+    case "chat":
+      return (
+        <svg {...common}>
+          <path d="M20.5 12.4c0 3.8-3.8 6.9-8.5 6.9-1 0-2-.15-2.9-.42L4.5 20.5l1.3-3.6C4.4 15.7 3.5 14.15 3.5 12.4c0-3.8 3.8-6.9 8.5-6.9s8.5 3.1 8.5 6.9Z" />
         </svg>
       );
     case "bell":

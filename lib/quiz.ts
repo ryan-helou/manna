@@ -91,9 +91,9 @@ function distractors(today: Set<string>, todayRefs: Ref[], rnd: () => number, wa
 }
 
 /** How many questions a day asks. */
-export const QUESTIONS_PER_DAY = 5;
+export const QUESTIONS_PER_DAY = 3;
 
-/** Five questions on a day's chapters, drawn from as many angles as it allows. */
+/** Three questions on a day's chapters, drawn from as many angles as it allows. */
 export function quizForDay(planId: string, day: number, chapters: Ref[]): Question[] {
   if (chapters.length === 0) return [];
   names();

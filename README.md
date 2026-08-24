@@ -31,8 +31,8 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
   are, one tap to each.
 - **Streaks.** Consecutive days logged. The day rolls over at 3 AM, not midnight.
 - **Together.** The whole group, ordered by how far through they are, with who
-  has read today at a glance, and a feed of what people have written lately. Tap
-  anyone to see their heatmap, streak and milestones. The gap quoted beside your
+  has read today at a glance. Tap anyone to see their heatmap, streak and
+  milestones. The gap quoted beside your
   rank is to the person immediately ahead rather than to the leader.
 - **Journey.** A contribution heatmap over the whole plan where every square
   opens that day, an index of all 66 books showing where you are in each,
@@ -42,11 +42,12 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
 - **Pull to refresh.** Drag down from the top of any tab. A home-screen app has
   no browser chrome, so the operating system's gesture never fires and there is
   no reload button to fall back on.
-- **Notes.** A shared field on each day's reading. Anyone in the plan can write,
-  everyone can read. Flat, no threads.
+- **Notes.** A tab of everything the group has written, gathered under the
+  passage it was about. Comment on a whole day or on one chapter, reply to
+  anyone, and react with one of six emoji. Threads are one level deep.
 - **Verse of the day.** The strongest verse of today's chapters, scored on
   whether it stands on its own, and the same for everyone reading that day.
-- **A daily check.** Five multiple choice questions on what you just read,
+- **A daily check.** Three multiple choice questions on what you just read,
   marked on the spot.
 - **Evening reminder.** A web push if today is still unticked, at an hour each
   person picks.
@@ -135,7 +136,7 @@ Three suites, plain `.test.ts` files run with `tsx`, no framework:
 - `lib/weights.test.ts` - the committed weight table is exactly what the model
   produces, plus the sanity checks: genealogies cheap, epistles dear, Romans
   above Chronicles per word.
-- `lib/quiz.test.ts` - checks all 1,800 of a year's questions against the same
+- `lib/quiz.test.ts` - checks every one of a year's questions against the same
   text they were built from, so none of them can be wrong about the Bible.
 - `lib/progress.test.ts` - pace, streaks, stats, milestones, partial days, late
   joiners and the verse of the day. Includes a regression test for the bug that

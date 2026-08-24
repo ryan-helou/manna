@@ -3,6 +3,7 @@ import { getStore } from "@/lib/db";
 import { currentUser } from "@/lib/session";
 import { cutsFor, readState } from "@/lib/state";
 import { MAX_NOTE_LENGTH } from "@/lib/types";
+import { allChapters } from "@/lib/bible";
 
 export const dynamic = "force-dynamic";
 
@@ -42,10 +43,14 @@ export async function POST(req: Request) {
     planId?: unknown;
     day?: unknown;
     body?: unknown;
+    parentId?: unknown;
+    book?: unknown;
+    chapter?: unknown;
   };
   const planId = typeof body.planId === "string" ? body.planId : "";
   const day = Number(body.day);
   const text = typeof body.body === "string" ? body.body.trim() : "";
+  const parentId = typeof body.parentId === "string" ? body.parentId : null;
   const store = getStore();
 
   if (!(await store.isMember(planId, me.id))) {
@@ -54,8 +59,10 @@ export async function POST(req: Request) {
   const plan = await store.getPlan(planId);
   if (!plan) return NextResponse.json({ error: "No such plan." }, { status: 404 });
 
+  // A reply carries no day of its own: it inherits the one its parent is on.
+  // Checking the day first rejected every reply ever posted.
   const days = cutsFor(plan.startDay, plan.months).length - 1;
-  if (!Number.isInteger(day) || day < 1 || day > days) {
+  if (!parentId && (!Number.isInteger(day) || day < 1 || day > days)) {
     return NextResponse.json({ error: "That day is not in the plan." }, { status: 400 });
   }
   if (!text) return NextResponse.json({ error: "Write something first." }, { status: 400 });
@@ -66,7 +73,37 @@ export async function POST(req: Request) {
     );
   }
 
-  await store.addNote(planId, me.id, day, text);
+  // A note may be about one chapter rather than the whole day's reading. The
+  // chapter has to be one actually on that day, or the note would appear under
+  // a passage nobody read.
+  let ref: { book: string; chapter: number } | null = null;
+  if (!parentId && typeof body.book === "string" && body.chapter !== undefined) {
+    const chapter = Number(body.chapter);
+    const cuts = cutsFor(plan.startDay, plan.months);
+    const onThisDay = allChapters()
+      .slice(cuts[day - 1], cuts[day])
+      .some((r) => r.book === body.book && r.chapter === chapter);
+    if (!onThisDay) {
+      return NextResponse.json(
+        { error: "That chapter is not in this day's reading." },
+        { status: 400 },
+      );
+    }
+    ref = { book: body.book, chapter };
+  }
+
+  if (parentId) {
+    // Threads stay one level deep: replying to a reply attaches to the note it
+    // was answering, so a conversation never becomes a tree nobody can follow.
+    const notes = await store.listNotes(planId);
+    const parent = notes.find((n) => n.id === parentId);
+    if (!parent) {
+      return NextResponse.json({ error: "That note is gone." }, { status: 404 });
+    }
+    await store.addNote(planId, me.id, parent.day, text, parent.parentId ?? parent.id);
+  } else {
+    await store.addNote(planId, me.id, day, text, null, ref);
+  }
   return NextResponse.json(await readState());
 }
 

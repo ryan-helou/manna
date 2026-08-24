@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { quizForDay } from "./quiz";
+import { quizForDay, QUESTIONS_PER_DAY } from "./quiz";
 import { partition } from "./schedule";
 import { allChapters, refKey, type Ref } from "./bible";
 import { weightOf } from "./weights";
@@ -173,15 +173,18 @@ console.log("\nthere is always something to ask");
     const days = daysOf(months);
     const counts = days.map((refs, i) => quizForDay("p1", i + 1, refs).length);
     const thin = counts.filter((c) => c < 2).length;
-    const full = counts.filter((c) => c === 5).length;
+    const full = counts.filter((c) => c === QUESTIONS_PER_DAY).length;
     check(`${months}mo: every day asks something`, counts.filter((c) => c === 0).length, 0);
     check(`${months}mo: no day is left with a single question`, thin, 0);
     ok(
-      `${months}mo: a full five on 90% of days`,
+      `${months}mo: a full ${QUESTIONS_PER_DAY} on 90% of days`,
       full / days.length >= 0.9,
       `only ${full} of ${days.length}`,
     );
-    ok(`${months}mo: never more than five`, counts.every((c) => c <= 5));
+    ok(
+      `${months}mo: never more than ${QUESTIONS_PER_DAY}`,
+      counts.every((c) => c <= QUESTIONS_PER_DAY),
+    );
   }
 }
 

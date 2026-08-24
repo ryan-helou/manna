@@ -1,7 +1,7 @@
 import type { Pool as PgPool } from "pg";
 import { DEFAULT_TRANSLATION, isTranslation, type TranslationId } from "./bible";
 import { CHAPTER_WEIGHTS } from "./weights";
-import type { ChapterRead, Member, Note, PlanSummary, User } from "./types";
+import type { ChapterRead, Member, Note, PlanSummary, Reaction, User } from "./types";
 import type { DayKey } from "./dates";
 
 /**
@@ -85,8 +85,19 @@ export interface Store {
 
   // Notes
   listNotes(planId: string): Promise<Note[]>;
-  addNote(planId: string, userId: string, day: number, body: string): Promise<Note>;
+  addNote(
+    planId: string,
+    userId: string,
+    day: number,
+    body: string,
+    parentId?: string | null,
+    ref?: { book: string; chapter: number } | null,
+  ): Promise<Note>;
   deleteNote(planId: string, noteId: string, userId: string): Promise<boolean>;
+  /** Every reaction in a plan, keyed by note id. */
+  listReactions(planId: string): Promise<Map<string, Reaction[]>>;
+  /** Add the reaction, or take it back if it is already there. */
+  toggleReaction(planId: string, noteId: string, userId: string, emoji: string): Promise<void>;
 
   // Chapter weights, seeded from lib/weights.ts
   countChapterWeights(): Promise<number>;
@@ -235,6 +246,27 @@ class PgStore implements Store {
           )`);
         await this.pool.query(
           `CREATE INDEX IF NOT EXISTS notes_plan_day_idx ON notes (plan_id, day)`,
+        );
+        // Replies point at the note they answer. One level deep by convention,
+        // enforced where notes are written rather than by the schema.
+        await this.pool.query(
+          `ALTER TABLE notes ADD COLUMN IF NOT EXISTS parent_id TEXT
+             REFERENCES notes(id) ON DELETE CASCADE`,
+        );
+        // A note may name the chapter it is about. Null means it is about the
+        // day's reading as a whole.
+        await this.pool.query(`ALTER TABLE notes ADD COLUMN IF NOT EXISTS book TEXT`);
+        await this.pool.query(`ALTER TABLE notes ADD COLUMN IF NOT EXISTS chapter INT`);
+        await this.pool.query(`
+          CREATE TABLE IF NOT EXISTS note_reactions (
+            note_id TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            emoji TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            PRIMARY KEY (note_id, user_id, emoji)
+          )`);
+        await this.pool.query(
+          `CREATE INDEX IF NOT EXISTS note_reactions_note_idx ON note_reactions (note_id)`,
         );
         await this.pool.query(`
           CREATE TABLE IF NOT EXISTS push_subs (
@@ -544,26 +576,76 @@ class PgStore implements Store {
   async listNotes(planId: string): Promise<Note[]> {
     await this.init();
     const r = await this.pool.query(
-      `SELECT id, day, user_id, body,
+      `SELECT id, day, user_id, body, parent_id, book, chapter,
               to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at
        FROM notes WHERE plan_id = $1 ORDER BY created_at`,
       [planId],
     );
     return r.rows.map((x) => ({
-      id: x.id, day: Number(x.day), userId: x.user_id, body: x.body, createdAt: x.created_at,
+      id: x.id, day: Number(x.day), userId: x.user_id, body: x.body,
+      createdAt: x.created_at, parentId: x.parent_id ?? null,
+      book: x.book ?? null, chapter: x.chapter == null ? null : Number(x.chapter),
     }));
   }
 
-  async addNote(planId: string, userId: string, day: number, body: string): Promise<Note> {
+  async addNote(
+    planId: string,
+    userId: string,
+    day: number,
+    body: string,
+    parentId: string | null = null,
+    ref: { book: string; chapter: number } | null = null,
+  ): Promise<Note> {
     await this.init();
     const r = await this.pool.query(
-      `INSERT INTO notes (id, plan_id, user_id, day, body) VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, day, user_id, body,
+      `INSERT INTO notes (id, plan_id, user_id, day, body, parent_id, book, chapter)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, day, user_id, body, parent_id, book, chapter,
          to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at`,
-      [newId(), planId, userId, day, body],
+      [newId(), planId, userId, day, body, parentId, ref?.book ?? null, ref?.chapter ?? null],
     );
     const x = r.rows[0];
-    return { id: x.id, day: Number(x.day), userId: x.user_id, body: x.body, createdAt: x.created_at };
+    return {
+      id: x.id, day: Number(x.day), userId: x.user_id, body: x.body,
+      createdAt: x.created_at, parentId: x.parent_id ?? null,
+      book: x.book ?? null, chapter: x.chapter == null ? null : Number(x.chapter),
+    };
+  }
+
+  async listReactions(planId: string): Promise<Map<string, Reaction[]>> {
+    await this.init();
+    const r = await this.pool.query(
+      `SELECT x.note_id, x.emoji, array_agg(x.user_id) AS user_ids
+         FROM note_reactions x JOIN notes n ON n.id = x.note_id
+        WHERE n.plan_id = $1
+        GROUP BY x.note_id, x.emoji`,
+      [planId],
+    );
+    const out = new Map<string, Reaction[]>();
+    for (const row of r.rows) {
+      if (!out.has(row.note_id)) out.set(row.note_id, []);
+      out.get(row.note_id)!.push({ emoji: row.emoji, userIds: row.user_ids });
+    }
+    return out;
+  }
+
+  async toggleReaction(planId: string, noteId: string, userId: string, emoji: string): Promise<void> {
+    await this.init();
+    // The note must belong to this plan: a note id alone is not authorisation.
+    const owns = await this.pool.query(
+      `SELECT 1 FROM notes WHERE id = $1 AND plan_id = $2`, [noteId, planId],
+    );
+    if (!owns.rowCount) return;
+    const gone = await this.pool.query(
+      `DELETE FROM note_reactions WHERE note_id = $1 AND user_id = $2 AND emoji = $3`,
+      [noteId, userId, emoji],
+    );
+    if (gone.rowCount) return;
+    await this.pool.query(
+      `INSERT INTO note_reactions (note_id, user_id, emoji) VALUES ($1, $2, $3)
+       ON CONFLICT DO NOTHING`,
+      [noteId, userId, emoji],
+    );
   }
 
   async deleteNote(planId: string, noteId: string, userId: string): Promise<boolean> {
@@ -636,6 +718,7 @@ class MemoryStore implements Store {
   private reads = new Map<string, ChapterRead[]>();
   private notes = new Map<string, Note[]>();
   private removals = new Map<string, Set<string>>();
+  private reactions = new Map<string, { noteId: string; userId: string; emoji: string }[]>();
   private weights = new Map<string, number>();
   private subs = new Map<string, StoredSub>();
   private meta = new Map<string, string>();
@@ -831,17 +914,54 @@ class MemoryStore implements Store {
     return [...(this.notes.get(planId) ?? [])];
   }
 
-  async addNote(planId: string, userId: string, day: number, body: string): Promise<Note> {
+  async addNote(
+    planId: string,
+    userId: string,
+    day: number,
+    body: string,
+    parentId: string | null = null,
+    ref: { book: string; chapter: number } | null = null,
+  ): Promise<Note> {
     if (!this.notes.has(planId)) this.notes.set(planId, []);
-    const note: Note = { id: newId(), day, userId, body, createdAt: new Date().toISOString() };
+    const note: Note = {
+      id: newId(), day, userId, body, createdAt: new Date().toISOString(), parentId,
+      book: ref?.book ?? null, chapter: ref?.chapter ?? null,
+    };
     this.notes.get(planId)!.push(note);
     return note;
+  }
+
+  async listReactions(planId: string): Promise<Map<string, Reaction[]>> {
+    const mine = this.reactions.get(planId) ?? [];
+    const out = new Map<string, Reaction[]>();
+    for (const r of mine) {
+      if (!out.has(r.noteId)) out.set(r.noteId, []);
+      const list = out.get(r.noteId)!;
+      const found = list.find((x) => x.emoji === r.emoji);
+      if (found) found.userIds.push(r.userId);
+      else list.push({ emoji: r.emoji, userIds: [r.userId] });
+    }
+    return out;
+  }
+
+  async toggleReaction(planId: string, noteId: string, userId: string, emoji: string): Promise<void> {
+    if (!(this.notes.get(planId) ?? []).some((n) => n.id === noteId)) return;
+    if (!this.reactions.has(planId)) this.reactions.set(planId, []);
+    const list = this.reactions.get(planId)!;
+    const at = list.findIndex(
+      (r) => r.noteId === noteId && r.userId === userId && r.emoji === emoji,
+    );
+    if (at >= 0) list.splice(at, 1);
+    else list.push({ noteId, userId, emoji });
   }
 
   async deleteNote(planId: string, noteId: string, userId: string): Promise<boolean> {
     const list = this.notes.get(planId);
     if (!list) return false;
-    const next = list.filter((n) => !(n.id === noteId && n.userId === userId));
+    // Deleting a note takes its replies with it, the way the cascade does.
+    const next = list.filter(
+      (n) => !(n.id === noteId && n.userId === userId) && n.parentId !== noteId,
+    );
     this.notes.set(planId, next);
     return next.length !== list.length;
   }

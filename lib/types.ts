@@ -52,6 +52,26 @@ export interface Note {
   userId: string;
   body: string;
   createdAt: string;
+  /** The note this one answers, or null when it opens a thread. */
+  parentId: string | null;
+  /** The chapter it is about. Null means the day's reading as a whole. */
+  book: string | null;
+  chapter: number | null;
+}
+
+/** The reactions people may leave. Six is enough to mean something. */
+export const REACTIONS = ["\u{1F64F}", "\u2764\uFE0F", "\u{1F44D}", "\u{1F525}", "\u{1F4A1}", "\u2753"] as const;
+export type ReactionEmoji = (typeof REACTIONS)[number];
+
+export function isReaction(v: unknown): v is ReactionEmoji {
+  return typeof v === "string" && (REACTIONS as readonly string[]).includes(v);
+}
+
+/** One emoji and everyone who left it, so the UI can show a count and whether
+ *  you are among them. */
+export interface Reaction {
+  emoji: string;
+  userIds: string[];
 }
 
 /**
@@ -121,11 +141,14 @@ export interface QuizQuestion {
   note?: string;
 }
 
-/** A note with enough context to read it out of its day. */
+/** A note with enough context to read it away from its day. */
 export interface FeedNote extends Note {
   authorName: string;
   /** "Genesis 1 to 4", so the note makes sense away from the day card. */
   reference: string;
+  reactions: Reaction[];
+  /** Answers to this note, oldest first. One level deep, never a tree. */
+  replies: FeedNote[];
 }
 
 export interface AppState {

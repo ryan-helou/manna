@@ -37,7 +37,7 @@ export function TodayTab({
   onDayOffset: (offset: number) => void;
   onToggleDay: (day: number, done: boolean) => void;
   onToggleChapter: (ref: Ref, done: boolean) => void;
-  onAddNote: (day: number, body: string) => Promise<string | null>;
+  onAddNote: (day: number, body: string, ref: Ref | null) => Promise<string | null>;
   onDeleteNote: (id: string) => void;
 }) {
   const days = totalDays(plan);
@@ -65,6 +65,8 @@ export function TodayTab({
 
   const [noteDraft, setNoteDraft] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
+  // Which chapter the note is about. Null means the day's reading as a whole.
+  const [noteRef, setNoteRef] = useState<Ref | null>(null);
 
   // The payload carries today's notes only, because a year of a dozen people
   // writing is too much to send on every tap. Any other day fetches its own,
@@ -363,16 +365,58 @@ export function TodayTab({
           className="mt-3"
           onSubmit={async (e) => {
             e.preventDefault();
-            const err = await onAddNote(day, noteDraft);
+            const err = await onAddNote(day, noteDraft, noteRef);
             setNoteError(err);
-            if (!err) setNoteDraft("");
+            if (!err) {
+              setNoteDraft("");
+              setNoteRef(null);
+            }
           }}
         >
+          {/* What the note is about. A thought on one chapter should not be
+              filed under the whole morning's reading. */}
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setNoteRef(null)}
+              className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                noteRef === null
+                  ? "border-accent bg-accent-soft text-ink"
+                  : "border-line bg-page-2 text-ink-3"
+              }`}
+            >
+              Whole day
+            </button>
+            {chapters.map((r) => {
+              const on = noteRef?.book === r.book && noteRef?.chapter === r.chapter;
+              return (
+                <button
+                  key={`note-${r.book}-${r.chapter}`}
+                  type="button"
+                  onClick={() => setNoteRef(on ? null : r)}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                    on
+                      ? "border-accent bg-accent-soft text-ink"
+                      : "border-line bg-page-2 text-ink-3"
+                  }`}
+                >
+                  {r.book} {r.chapter}
+                </button>
+              );
+            })}
+          </div>
+
           <textarea
             value={noteDraft}
             onChange={(e) => setNoteDraft(e.target.value.slice(0, MAX_NOTE_LENGTH))}
             rows={3}
-            placeholder={dayNotes.length ? "Add to the conversation" : "What stood out to you?"}
+            placeholder={
+              noteRef
+                ? `On ${noteRef.book} ${noteRef.chapter}`
+                : dayNotes.length
+                  ? "Add to the conversation"
+                  : "What stood out to you?"
+            }
             className="w-full resize-none rounded-xl border border-line-2 bg-page px-4 py-3 text-[0.9375rem] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
           {noteError && (
