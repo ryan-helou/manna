@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sheet } from "./Sheet";
 import { Glyph } from "./Glyph";
 import { NotificationSetup } from "./NotificationSetup";
+import { InviteCard } from "./InviteCard";
 import { MAX_MONTHS, MIN_MONTHS } from "@/lib/types";
 import type { ActivePlan, User } from "@/lib/types";
 
@@ -11,6 +12,7 @@ export function SettingsSheet({
   plan,
   me,
   pushConfigured,
+  isAdmin,
   theme,
   onTheme,
   busy,
@@ -24,6 +26,7 @@ export function SettingsSheet({
   plan: ActivePlan;
   me: User;
   pushConfigured: boolean;
+  isAdmin: boolean;
   theme: "system" | "light" | "dark";
   onTheme: (t: "system" | "light" | "dark") => void;
   busy: boolean;
@@ -58,7 +61,8 @@ export function SettingsSheet({
   const [pwSaved, setPwSaved] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
-  const isCreator = plan.creatorId === me.id;
+  // The plan's owner, or the admin, who can moderate any plan.
+  const isCreator = plan.creatorId === me.id || isAdmin;
   const dirty = name !== plan.name || months !== plan.months;
 
   const field =
@@ -67,6 +71,8 @@ export function SettingsSheet({
   return (
     <Sheet title="Settings" onClose={onClose}>
       <div className="space-y-6">
+        <InviteCard planName={plan.name} code={plan.joinCode} />
+
         {/* ---- you ---- */}
         <div>
           <p className="eyebrow flex items-center gap-1.5 text-ink-2">

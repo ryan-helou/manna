@@ -9,6 +9,7 @@ import { NotesTab } from "./NotesTab";
 import { JourneyTab } from "./JourneyTab";
 import { SettingsSheet } from "./SettingsSheet";
 import { MilestoneCard } from "./MilestoneCard";
+import { AddPlanSheet } from "./AddPlanSheet";
 import { PullToRefresh } from "./PullToRefresh";
 import { Glyph, type GlyphName } from "./Glyph";
 import { useManna } from "./useManna";
@@ -64,6 +65,7 @@ export function AppShell({
   // rather than in the card because the heatmap and the book index both need to
   // send you to a day, and offsets survive the 3 AM rollover without resyncing.
   const [dayOffset, setDayOffset] = useState(0);
+  const [addingPlan, setAddingPlan] = useState(false);
 
   // Start from the server's day so the first client render matches the markup,
   // then hand over to the device's own calendar. A home-screen app is usually
@@ -159,7 +161,11 @@ export function AppShell({
 
   if (!state.active) {
     return (
-      <Onboarding busy={busy} onCreate={(name, months) => post("/api/plans", { name, months })} />
+      <Onboarding
+        busy={busy}
+        onCreate={(name, months) => post("/api/plans", { name, months })}
+        onJoin={(code) => post("/api/plans/join", { code })}
+      />
     );
   }
 
@@ -174,7 +180,8 @@ export function AppShell({
         <PlanSwitcher
           plans={state.plans}
           activeId={plan.id}
-          onSelect={(planId) => post("/api/plans/select", { planId })}
+          onSelect={(planId) => void post("/api/plans/select", { planId })}
+          onAdd={() => setAddingPlan(true)}
         />
         <button
           onClick={() => setSettingsOpen(true)}
@@ -285,6 +292,23 @@ export function AppShell({
         </div>
       </nav>
 
+      {addingPlan && (
+        <AddPlanSheet
+          busy={busy}
+          onClose={() => setAddingPlan(false)}
+          onCreate={async (name: string, months: number) => {
+            const err = await post("/api/plans", { name, months });
+            if (!err) setAddingPlan(false);
+            return err;
+          }}
+          onJoin={async (code: string) => {
+            const err = await post("/api/plans/join", { code });
+            if (!err) setAddingPlan(false);
+            return err;
+          }}
+        />
+      )}
+
       {celebrating && (
         <MilestoneCard milestone={celebrating} onClose={() => setCelebrating(null)} />
       )}
@@ -294,6 +318,7 @@ export function AppShell({
           plan={plan}
           me={state.me}
           pushConfigured={state.push.configured}
+          isAdmin={state.isAdmin}
           theme={theme}
           onTheme={applyTheme}
           busy={busy}
@@ -327,30 +352,27 @@ export function AppShell({
  * will be for almost everyone: a quiet label, not a control. It only becomes a
  * menu once there is a second plan to switch to.
  */
+/**
+ * The plan you are in, and the way to be in another.
+ *
+ * With one plan it is a label rather than a control, which is what it is for
+ * almost everyone. It is still tappable, because starting a second plan or
+ * joining somebody else's has to live somewhere and this is where you would
+ * look for it.
+ */
 function PlanSwitcher({
   plans,
   activeId,
   onSelect,
+  onAdd,
 }: {
   plans: { id: string; name: string }[];
   activeId: string;
   onSelect: (planId: string) => void;
+  onAdd: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const active = plans.find((p) => p.id === activeId);
-
-  if (plans.length <= 1) {
-    return (
-      <span className="flex min-w-0 items-center gap-2">
-        <span className="shrink-0 text-accent">
-          <Glyph name="book" className="h-4 w-4" />
-        </span>
-        <span className="serif truncate text-[0.9375rem] font-semibold text-ink">
-          {active?.name}
-        </span>
-      </span>
-    );
-  }
 
   return (
     <div className="relative min-w-0">
@@ -392,6 +414,18 @@ function PlanSwitcher({
                 </button>
               </li>
             ))}
+            <li className="mt-1 border-t border-line pt-1">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  onAdd();
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-accent transition hover:bg-page-2"
+              >
+                <Glyph name="plus" className="h-4 w-4 shrink-0" />
+                Start or join another
+              </button>
+            </li>
           </ul>
         </>
       )}

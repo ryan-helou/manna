@@ -53,20 +53,26 @@ from 3 minutes (Psalm 117) to 56 (Psalm 119).
 - **Evening reminder.** A web push if today is still unticked, at an hour each
   person picks.
 
-## The plan
+## Plans
 
-One plan, covering the entire Bible; the only variable is pace. Whoever signs in
-first creates it and picks a duration of 1 to 13 whole months, and the schedule
-is rebuilt whenever that changes. After that there is nothing to join and no
-code to pass around: signing in puts you in it.
+A plan covers the entire Bible; the only variable is pace. Anyone can start one,
+picking a duration of 1 to 13 whole months, and the schedule is rebuilt whenever
+that changes. Starting a plan hands you a four character code; anyone who types
+it is in. Codes leave out the shapes that get misread out loud or in a
+screenshot: no O or 0, no 1, I or L. Case does not matter on entry.
 
-Registration is open: anyone who reaches the URL can make an account and is then
-in the plan. Setting `SIGNUP_SECRET` puts one shared word in front of
-registration if that is ever wanted; signing in never asks for it. It is
-currently unset.
+You can be in several plans and switch between them from the top left, though
+one is the ordinary case. Late joiners start at their own day one rather than
+wherever the plan has got to, so nobody arrives already behind.
 
-The creator can remove someone, which takes their reading and their notes with
-them and stops them signing back in.
+The plan's creator can change its settings, hand edit rights to specific people,
+and remove someone, which takes their reading and their notes with them and
+stops them rejoining with the code. `ADMIN_USERNAME` names one account that can
+do the same on any plan, not only its own; it is read from the username, so
+there is no path in the product that grants it.
+
+Registration is open. Setting `SIGNUP_SECRET` puts one shared word in front of
+new accounts if that is ever wanted; signing in never asks for it.
 
 Only the creator can change plan settings, and can hand edit rights to specific
 people individually. Everyone can see who else is reading.
@@ -168,6 +174,7 @@ the committed table ever drifts from the model.
 | `VAPID_SUBJECT` | Web push contact, `mailto:` |
 | `CRON_SECRET` | Guards `/api/cron/tick` |
 | `SIGNUP_SECRET` | The shared word needed to register. Unset means anyone can |
+| `ADMIN_USERNAME` | The one account that can moderate any plan, not only its own |
 | `TZ` | The group's timezone. Must be set: the day rolls over at 3 AM local, and a container defaults to UTC, which in Toronto means 11 PM |
 | `ESV_API_KEY` | Optional. Shows the verse of the day's text inline |
 

@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { getStore } from "./db";
-import { currentUser } from "./session";
+import { currentUser, isAdmin } from "./session";
 import { partition } from "./schedule";
 import { allChapters } from "./bible";
 import { weightOf } from "./weights";
@@ -49,25 +49,12 @@ export async function readState(): Promise<AppState> {
       me: null, plans: [], active: null, verse: null, quiz: [], feed: [],
       push: { configured: pushConfigured() },
       inviteRequired: !!process.env.SIGNUP_SECRET,
+      isAdmin: false,
     };
   }
 
-  // Everyone reads the same plan. There is no code to hand round: signing in
-  // puts you in it, and if it already started you begin at day one on your own
-  // clock rather than however far along everyone else is.
-  let plans = await store.listPlansFor(me.id);
-  if (plans.length === 0) {
-    const shared = await store.getSharedPlan();
-    // Unless they were removed from it, in which case signing in again must not
-    // quietly undo that.
-    if (shared && !(await store.isRemoved(shared.id, me.id))) {
-      // Never before the plan itself begins. Signing up the day before it starts
-      // should not put you a day ahead of everybody else.
-      const now = today();
-      await store.addMember(shared.id, me.id, false, now < shared.startDay ? shared.startDay : now);
-      plans = await store.listPlansFor(me.id);
-    }
-  }
+  // You are in the plans you started or were given a code for, and no others.
+  const plans = await store.listPlansFor(me.id);
   const jar = await cookies();
   const wanted = jar.get(ACTIVE_COOKIE)?.value;
   // Fall back to the first plan when the cookie points at one they have left.
@@ -90,6 +77,7 @@ export async function readState(): Promise<AppState> {
       const shell = {
         id: plan.id,
         name: plan.name,
+        joinCode: plan.joinCode,
         months: plan.months,
         startDay: plan.startDay,
         translation: plan.translation,
@@ -137,5 +125,6 @@ export async function readState(): Promise<AppState> {
     me, plans, active, verse, quiz, feed,
     push: { configured: pushConfigured() },
     inviteRequired: !!process.env.SIGNUP_SECRET,
+    isAdmin: isAdmin(me),
   };
 }

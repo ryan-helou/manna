@@ -101,6 +101,20 @@ export async function signOut(): Promise<void> {
   jar.delete(COOKIE);
 }
 
+/**
+ * The one account that can moderate any plan, not only the ones it started.
+ *
+ * Read from the username rather than from a row, so it cannot be granted by
+ * anything the app itself does: there is no path in the product that makes
+ * somebody an admin. Matched case-insensitively, because the sign-in field is.
+ */
+export function isAdmin(user: User | null): boolean {
+  if (!user) return false;
+  const admin = (process.env.ADMIN_USERNAME || "").trim().toLowerCase();
+  if (!admin) return false;
+  return user.username.trim().toLowerCase() === admin;
+}
+
 export async function currentUser(): Promise<User | null> {
   const jar = await cookies();
   const id = unseal(jar.get(COOKIE)?.value);
