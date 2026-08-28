@@ -3,7 +3,6 @@ import { getStore } from "@/lib/db";
 import { currentUser } from "@/lib/session";
 import { readState, setActivePlan } from "@/lib/state";
 import { isJoinCode, normalizeCode } from "@/lib/types";
-import { today } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +29,10 @@ export async function POST(req: Request) {
     );
   }
 
-  // Joining twice is a no-op rather than an error: the code still works. Day one
-  // is today, or the plan's own start if it has not begun, so nobody arrives
-  // already ahead of the people who were there first.
-  const now = today();
-  await store.addMember(plan.id, me.id, false, now < plan.startDay ? plan.startDay : now);
+  // Joining twice is a no-op rather than an error: the code still works.
+  // Everyone in a plan shares its start date, so a joiner lands on whatever day
+  // the group is on rather than at a day one of their own.
+  await store.addMember(plan.id, me.id, false, plan.startDay);
   await setActivePlan(plan.id);
   return NextResponse.json(await readState());
 }

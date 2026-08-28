@@ -60,12 +60,76 @@ export interface Note {
   chapter: number | null;
 }
 
-/** The reactions people may leave. Six is enough to mean something. */
-export const REACTIONS = ["\u{1F64F}", "\u2764\uFE0F", "\u{1F44D}", "\u{1F525}", "\u{1F4A1}", "\u2753"] as const;
-export type ReactionEmoji = (typeof REACTIONS)[number];
+/**
+ * The reactions offered up front. Any emoji is allowed, so this is a shortcut
+ * rather than the whole menu: the six that actually got used, plus enough of a
+ * spread that most notes can be answered without opening a keyboard.
+ */
+export const QUICK_REACTIONS = [
+  "\u{1F64F}", "\u2764\uFE0F", "\u{1F44D}", "\u{1F525}", "\u{1F4A1}", "\u2753",
+  "\u{1F62D}", "\u{1F622}", "\u{1F914}", "\u{1F440}", "\u{1F4AF}", "\u{1F929}",
+  "\u{1F609}", "\u{1F602}", "\u{1F60A}", "\u{1F4D6}", "\u{1F54A}\uFE0F", "\u2728",
+  "\u{1F331}", "\u26F0\uFE0F", "\u{1F5FF}", "\u{1F451}", "\u2694\uFE0F", "\u{1F344}",
+] as const;
 
-export function isReaction(v: unknown): v is ReactionEmoji {
-  return typeof v === "string" && (REACTIONS as readonly string[]).includes(v);
+/** A reaction is any single emoji. Longest legitimate one measured is a family
+ *  sequence at 11 UTF-16 units; 32 leaves room without leaving room for prose. */
+const MAX_REACTION_LENGTH = 32;
+
+/**
+ * One emoji, and nothing else.
+ *
+ * Anyone can now send whatever their keyboard produces, so this is the only
+ * thing standing between the reaction row and a paragraph of text. Three
+ * conditions, all of them necessary:
+ *
+ *  - exactly ONE grapheme, so a string of emoji cannot be posted as a single
+ *    reaction and stretch the row off the screen;
+ *  - it has to actually contain a pictograph, a flag or a keycap, which is what
+ *    rules out letters, digits and punctuation;
+ *  - no letters or whitespace anywhere, which rules out the sequences that
+ *    smuggle text through a variation selector.
+ */
+export function isReaction(v: unknown): v is string {
+  if (typeof v !== "string") return false;
+  const s = v.trim();
+  if (!s || s.length > MAX_REACTION_LENGTH) return false;
+  if (/[\s\p{L}]/u.test(s)) return false;
+  if (!/\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20E3/u.test(s)) return false;
+  try {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+    let count = 0;
+    for (const _ of segmenter.segment(s)) {
+      void _;
+      if (++count > 1) return false;
+    }
+    return count === 1;
+  } catch {
+    // No Intl.Segmenter: fall back to the length bound, which still holds.
+    return true;
+  }
+}
+
+/**
+ * The colour schemes. Olive is the default and is the base of the stylesheet,
+ * so a reader who never opens Settings gets it with no attribute set and no
+ * flash of the wrong palette. `ground` and `accent` are the dark theme values,
+ * quoted here only so the picker can show what it is offering.
+ */
+export const PALETTES = [
+  { id: "olive", name: "Olive", note: "Monastic and still", ground: "#0f120d", accent: "#a9c48a" },
+  { id: "vigil", name: "Vigil", note: "A cool room, one warm light", ground: "#0b0e18", accent: "#e2c88a" },
+  { id: "brass", name: "Brass", note: "Lamplight and warm brass", ground: "#110d0b", accent: "#e8b26a" },
+  { id: "ember", name: "Ember", note: "Neutral room, one hot colour", ground: "#101010", accent: "#e8825a" },
+  { id: "slate", name: "Slate", note: "Quiet, cool, editorial", ground: "#0e1013", accent: "#8fb4d9" },
+  { id: "claret", name: "Claret", note: "Liturgical and warm", ground: "#130b0e", accent: "#c98d88" },
+] as const;
+
+export type PaletteId = (typeof PALETTES)[number]["id"];
+export const DEFAULT_PALETTE: PaletteId = "olive";
+
+export function isPalette(v: unknown): v is PaletteId {
+  return typeof v === "string" && PALETTES.some((p) => p.id === v);
 }
 
 /** One emoji and everyone who left it, so the UI can show a count and whether

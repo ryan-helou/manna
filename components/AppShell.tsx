@@ -7,7 +7,7 @@ import { TodayTab } from "./TodayTab";
 import { TogetherTab } from "./TogetherTab";
 import { NotesTab } from "./NotesTab";
 import { JourneyTab } from "./JourneyTab";
-import { SettingsSheet } from "./SettingsSheet";
+import { SettingsTab } from "./SettingsTab";
 import { MilestoneCard } from "./MilestoneCard";
 import { AddPlanSheet } from "./AddPlanSheet";
 import { PullToRefresh } from "./PullToRefresh";
@@ -15,11 +15,12 @@ import { Glyph, type GlyphName } from "./Glyph";
 import { useManna } from "./useManna";
 import { today as deviceToday, type DayKey } from "@/lib/dates";
 import { currentDay, milestonesFor, type Milestone } from "@/lib/progress";
+import { DEFAULT_PALETTE, isPalette, type PaletteId } from "@/lib/types";
 import type { AppState } from "@/lib/types";
 import { allChapters, type Ref } from "@/lib/bible";
 import { today as todayKey } from "@/lib/dates";
 
-type Tab = "today" | "notes" | "together" | "journey";
+type Tab = "today" | "notes" | "together" | "journey" | "settings";
 
 /**
  * Add or remove chapter ticks in the local state, so the box fills under the
@@ -47,6 +48,7 @@ const TABS: { id: Tab; label: string; glyph: GlyphName }[] = [
   { id: "notes", label: "Notes", glyph: "chat" },
   { id: "together", label: "Together", glyph: "users" },
   { id: "journey", label: "Journey", glyph: "chart" },
+  { id: "settings", label: "Settings", glyph: "settings" },
 ];
 
 export function AppShell({
@@ -58,8 +60,8 @@ export function AppShell({
 }) {
   const { state, busy, send, sendOptimistic } = useManna(initial);
   const [tab, setTab] = useState<Tab>("today");
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>("system");
+  const [palette, setPalette] = useState<PaletteId>(DEFAULT_PALETTE);
   const [celebrating, setCelebrating] = useState<Milestone | null>(null);
   // Which day the reading card is showing, as an offset from today. Held here
   // rather than in the card because the heatmap and the book index both need to
@@ -83,13 +85,19 @@ export function AppShell({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [send]);
 
+  // The saved theme and palette can only be read once the client is running, so
+  // this is the one place state is set straight from an effect. One directive
+  // for the pair rather than one each, which goes stale the moment either moves.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
+      const savedPalette = localStorage.getItem("manna-palette");
+      if (isPalette(savedPalette)) setPalette(savedPalette);
       const saved = localStorage.getItem("manna-theme");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved === "light" || saved === "dark") setTheme(saved);
     } catch {}
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Watch for a canonical section being finished and mark the moment once.
   // localStorage keyed per reader per plan, so it needs no schema and cannot
@@ -128,6 +136,24 @@ export function AppShell({
       } else {
         localStorage.setItem("manna-theme", next);
         document.documentElement.setAttribute("data-theme", next);
+      }
+    } catch {}
+  }, []);
+
+  /**
+   * Olive is the stylesheet's base, so choosing it removes the attribute rather
+   * than setting one. Same shape as the theme above, and the same reason:
+   * ThemeScript replays it before the next first paint.
+   */
+  const applyPalette = useCallback((next: PaletteId) => {
+    setPalette(next);
+    try {
+      if (next === DEFAULT_PALETTE) {
+        localStorage.removeItem("manna-palette");
+        document.documentElement.removeAttribute("data-palette");
+      } else {
+        localStorage.setItem("manna-palette", next);
+        document.documentElement.setAttribute("data-palette", next);
       }
     } catch {}
   }, []);
@@ -183,13 +209,6 @@ export function AppShell({
           onSelect={(planId) => void post("/api/plans/select", { planId })}
           onAdd={() => setAddingPlan(true)}
         />
-        <button
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Settings"
-          className="rounded-full p-2 text-ink-2 transition hover:bg-page-2 hover:text-ink"
-        >
-          <Glyph name="settings" className="h-5 w-5" />
-        </button>
       </header>
 
       {/* The tab bar is fixed, so the scroll region carries the clearance for it.
@@ -273,6 +292,38 @@ export function AppShell({
             }}
           />
         )}
+
+        {tab === "settings" && (
+          <SettingsTab
+            plan={plan}
+            me={state.me}
+            pushConfigured={state.push.configured}
+            isAdmin={state.isAdmin}
+            theme={theme}
+            onTheme={applyTheme}
+            palette={palette}
+            onPalette={applyPalette}
+            busy={busy}
+            onSavePlan={(patch: { name?: string; months?: number }) =>
+              send(`/api/plans/${plan.id}`, { method: "PATCH", body: JSON.stringify(patch) })
+            }
+            onSaveProfile={(patch) =>
+              send("/api/session", { method: "PATCH", body: JSON.stringify(patch) })
+            }
+            onToggleEdit={(userId, canEdit) =>
+              void send(`/api/plans/${plan.id}/members`, {
+                method: "PATCH",
+                body: JSON.stringify({ userId, canEdit }),
+              })
+            }
+            onRemove={(userId) =>
+              void send(`/api/plans/${plan.id}/members?userId=${encodeURIComponent(userId)}`, {
+                method: "DELETE",
+              })
+            }
+            onSignOut={() => void send("/api/session", { method: "DELETE" })}
+          />
+        )}
       </main>
 
       {/* ---- tab bar ----
@@ -330,36 +381,6 @@ export function AppShell({
         <MilestoneCard milestone={celebrating} onClose={() => setCelebrating(null)} />
       )}
 
-      {settingsOpen && (
-        <SettingsSheet
-          plan={plan}
-          me={state.me}
-          pushConfigured={state.push.configured}
-          isAdmin={state.isAdmin}
-          theme={theme}
-          onTheme={applyTheme}
-          busy={busy}
-          onClose={() => setSettingsOpen(false)}
-          onSavePlan={(patch: { name?: string; months?: number }) =>
-            send(`/api/plans/${plan.id}`, { method: "PATCH", body: JSON.stringify(patch) })
-          }
-          onSaveProfile={(patch) =>
-            send("/api/session", { method: "PATCH", body: JSON.stringify(patch) })
-          }
-          onToggleEdit={(userId, canEdit) =>
-            void send(`/api/plans/${plan.id}/members`, {
-              method: "PATCH",
-              body: JSON.stringify({ userId, canEdit }),
-            })
-          }
-          onRemove={(userId) =>
-            void send(`/api/plans/${plan.id}/members?userId=${encodeURIComponent(userId)}`, {
-              method: "DELETE",
-            })
-          }
-          onSignOut={() => void send("/api/session", { method: "DELETE" })}
-        />
-      )}
     </div>
   );
 }

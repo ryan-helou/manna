@@ -33,12 +33,20 @@ export function minutesForDay(plan: ActivePlan, day: number): number {
 }
 
 /**
- * When this reader's day 1 falls. Everyone reads the same schedule, but a late
- * joiner starts at the beginning of it on the day they join rather than being
- * dropped into the middle already behind.
+ * When day 1 falls. The plan's own start date, for everybody in it.
+ *
+ * This used to be per member: a late joiner began at THEIR day one, so nobody
+ * arrived already behind. Reversed on Ryan's instruction, 27 August 2026. The
+ * point of the group is that everyone is on the same chapter on the same
+ * morning, and a private day numbering quietly broke that: two people could
+ * both be "on day 40" and be reading different books.
+ *
+ * `plan_members.start_day` still exists and is kept equal to the plan's by
+ * PgStore.init, but it is no longer consulted. Read the plan, not the member.
  */
-export function startDayFor(plan: ActivePlan, userId: string): DayKey {
-  return plan.members.find((m) => m.id === userId)?.startDay ?? plan.startDay;
+export function startDayFor(plan: ActivePlan, _userId?: string): DayKey {
+  void _userId;
+  return plan.startDay;
 }
 
 /** The calendar date a plan day falls on, for this reader. */

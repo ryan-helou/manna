@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Glyph } from "./Glyph";
 import { timeAgo } from "@/lib/dates";
-import { MAX_NOTE_LENGTH, REACTIONS } from "@/lib/types";
+import { MAX_NOTE_LENGTH, QUICK_REACTIONS, isReaction } from "@/lib/types";
 import type { FeedNote, User } from "@/lib/types";
 
 /**
@@ -58,6 +58,7 @@ function NoteBody({
   onDelete: (id: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
+  const [custom, setCustom] = useState("");
   const mine = note.userId === me.id;
 
   return (
@@ -113,9 +114,12 @@ function NoteBody({
           <Glyph name="plus" className="h-3.5 w-3.5" />
         </button>
 
-        {picking && (
-          <span className="flex items-center gap-1 rounded-full border border-line-2 bg-page-2 px-2 py-1">
-            {REACTIONS.map((e) => (
+      </div>
+
+      {picking && (
+        <div className="rise-in mt-2 rounded-2xl border border-line-2 bg-page-2 p-2">
+          <div className="grid grid-cols-8 gap-0.5">
+            {QUICK_REACTIONS.map((e) => (
               <button
                 key={e}
                 onClick={() => {
@@ -123,14 +127,36 @@ function NoteBody({
                   setPicking(false);
                 }}
                 aria-label={`React with ${e}`}
-                className="rounded-full px-1 text-base transition hover:scale-125"
+                className="rounded-lg py-1 text-lg transition hover:bg-accent-soft"
               >
                 {e}
               </button>
             ))}
-          </span>
-        )}
-      </div>
+          </div>
+          {/* Anything the keyboard can produce is allowed, so the shortcuts
+              above are a convenience rather than the whole menu. */}
+          <label className="mt-2 flex items-center gap-2 rounded-xl border border-line px-2.5 py-1.5">
+            <span className="shrink-0 text-[0.6875rem] text-ink-3">Any emoji</span>
+            <input
+              value={custom}
+              onChange={(e) => {
+                const next = e.target.value;
+                setCustom(next);
+                if (isReaction(next)) {
+                  onReact(note.id, next.trim());
+                  setCustom("");
+                  setPicking(false);
+                }
+              }}
+              inputMode="text"
+              autoComplete="off"
+              aria-label="React with any emoji"
+              placeholder="Type one"
+              className="w-full min-w-0 bg-transparent text-base text-ink placeholder:text-ink-3 focus:outline-none"
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }

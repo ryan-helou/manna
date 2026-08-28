@@ -38,79 +38,74 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Light: glass over unbleached paper, lit from above.
+   Colourways.
+
+   Olive is the base, so a reader who has never touched the setting gets it with
+   no attribute on the html element and no flash. Every other scheme is an
+   override keyed on `data-palette`, which ThemeScript stamps before first paint.
+
+   Only COLOUR moves between schemes. The structural glass tokens (edge, sheen,
+   blur, shadow, grain) belong to the material rather than the palette and stay
+   in the two base blocks.
+
+   `--good` is part of the palette on purpose. It used to be a fixed green, so a
+   ticked chapter and "2 ahead" stayed green whatever the scheme was, which is
+   the one thing that gave away that the colour was skin deep.
    --------------------------------------------------------------------------- */
+
+/* Olive, light. */
 :root {
-  /* The ground is a mid tone on purpose. Frosted glass only reads as glass when
-     the pane is lighter than what it sits on; near-white panes on a near-white
-     page are just paper, which is what the first pass got wrong in the light
-     theme. */
-  --page: #dcd4c6;
-  --page-2: rgb(96 82 62 / 0.08);
-  --card: rgb(255 253 249 / 0.62);
-  --ink: #191512;
-  --ink-2: #5b5247;
-  --ink-3: #857b6d;
-  --line: rgb(94 80 60 / 0.16);
-  --line-2: rgb(94 80 60 / 0.3);
-
-  --accent: #92591b;
-  --on-accent: #fdfbf7;
-  --accent-soft: rgb(146 89 27 / 0.14);
-  --good: #3b6b36;
-  --warn: #9a4a22;
-
-  /* One overhead light and a floor, in the same hue as the room. */
-  --lamp: rgb(255 252 246 / 0.96);
-  --floor: rgb(88 72 52 / 0.26);
+  --page: #d2d6c4;
+  --page-2: rgb(70 84 50 / 0.08);
+  --card: rgb(253 255 246 / 0.62);
+  --ink: #151810;
+  --ink-2: #545a48;
+  --ink-3: #7e8472;
+  --line: rgb(70 84 50 / 0.16);
+  --line-2: rgb(70 84 50 / 0.3);
+  --accent: #4f6b34;
+  --accent-soft: rgb(79 107 52 / 0.14);
+  --on-accent: #fbfdf6;
+  --good: #4f6b34;
+  --warn: #96551f;
+  --lamp: rgb(252 255 246 / 0.96);
+  --floor: rgb(66 80 46 / 0.26);
+  --raised: rgb(251 254 244 / 0.9);
+  --island: rgb(253 255 246 / 0.84);
   --grain: 0.045;
-
-  --raised: rgb(253 251 247 / 0.9);
-  --island: rgb(255 253 249 / 0.84);
-  --bar: #dcd4c6;
   --glass-edge: rgb(255 255 255 / 0.95);
   --glass-inner: rgb(255 255 255 / 0.4);
   --sheen: rgb(255 255 255 / 0.55);
-  --bar-lip: rgb(255 255 255 / 0.6);
   --glass-shadow: 0 20px 44px -18px rgb(72 56 34 / 0.4), 0 3px 10px -5px rgb(72 56 34 / 0.24);
   --blur: 28px;
 
   color-scheme: light;
 }
 
-/* ---------------------------------------------------------------------------
-   Dark: the same panes in a lamp-lit room. This is the one most people see at
-   six in the morning, and the one the material was designed for.
-   --------------------------------------------------------------------------- */
+/* Olive, dark. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --page: #110d0b;
-    --page-2: rgb(255 246 233 / 0.052);
-    --card: rgb(255 246 233 / 0.075);
-    --ink: #f6f1e8;
-    --ink-2: #b0a493;
-    --ink-3: #7d7264;
-    --line: rgb(255 244 228 / 0.13);
-    --line-2: rgb(255 244 228 / 0.19);
-
-    --accent: #e8b26a;
-  --on-accent: #171310;
-    --on-accent: #171310;
-    --accent-soft: rgb(232 178 106 / 0.16);
-    --good: #8cbd81;
-    --warn: #dd9160;
-
-    --lamp: rgb(255 231 195 / 0.3);
+    --page: #0f120d;
+    --page-2: rgb(238 245 224 / 0.05);
+    --card: rgb(238 245 224 / 0.075);
+    --ink: #f0f3e9;
+    --ink-2: #a9b09c;
+    --ink-3: #737a68;
+    --line: rgb(238 245 224 / 0.13);
+    --line-2: rgb(238 245 224 / 0.2);
+    --accent: #a9c48a;
+    --accent-soft: rgb(169 196 138 / 0.16);
+    --on-accent: #11160e;
+    --good: #a9c48a;
+    --warn: #d98a6a;
+    --lamp: rgb(226 236 205 / 0.26);
     --floor: rgb(0 0 0 / 0.72);
+    --raised: rgb(22 27 19 / 0.94);
+    --island: rgb(30 36 26 / 0.9);
     --grain: 0.055;
-
-    --raised: rgb(28 23 20 / 0.94);
-    --island: rgb(44 36 31 / 0.9);
-    --bar: #1d1714;
     --glass-edge: rgb(255 246 235 / 0.34);
     --glass-inner: rgb(255 246 235 / 0.045);
     --sheen: rgb(255 246 235 / 0.12);
-    --bar-lip: rgb(255 246 235 / 0.05);
     --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
     --blur: 28px;
 
@@ -119,6 +114,55 @@
 }
 
 :root[data-theme="dark"] {
+  --page: #0f120d;
+  --page-2: rgb(238 245 224 / 0.05);
+  --card: rgb(238 245 224 / 0.075);
+  --ink: #f0f3e9;
+  --ink-2: #a9b09c;
+  --ink-3: #737a68;
+  --line: rgb(238 245 224 / 0.13);
+  --line-2: rgb(238 245 224 / 0.2);
+  --accent: #a9c48a;
+  --accent-soft: rgb(169 196 138 / 0.16);
+  --on-accent: #11160e;
+  --good: #a9c48a;
+  --warn: #d98a6a;
+  --lamp: rgb(226 236 205 / 0.26);
+  --floor: rgb(0 0 0 / 0.72);
+  --raised: rgb(22 27 19 / 0.94);
+  --island: rgb(30 36 26 / 0.9);
+  --grain: 0.055;
+  --glass-edge: rgb(255 246 235 / 0.34);
+  --glass-inner: rgb(255 246 235 / 0.045);
+  --sheen: rgb(255 246 235 / 0.12);
+  --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
+  --blur: 28px;
+
+  color-scheme: dark;
+}
+
+/* Brass. */
+:root[data-palette="brass"] {
+  --page: #dcd4c6;
+  --page-2: rgb(96 82 62 / 0.08);
+  --card: rgb(255 253 249 / 0.62);
+  --ink: #191512;
+  --ink-2: #5b5247;
+  --ink-3: #857b6d;
+  --line: rgb(94 80 60 / 0.16);
+  --line-2: rgb(94 80 60 / 0.3);
+  --accent: #92591b;
+  --accent-soft: rgb(146 89 27 / 0.14);
+  --on-accent: #fdfbf7;
+  --good: #92591b;
+  --warn: #9a3f22;
+  --lamp: rgb(255 252 246 / 0.96);
+  --floor: rgb(88 72 52 / 0.26);
+  --raised: rgb(253 251 247 / 0.9);
+  --island: rgb(255 253 249 / 0.84);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="brass"]:not([data-theme="light"]) {
     --page: #110d0b;
     --page-2: rgb(255 246 233 / 0.052);
     --card: rgb(255 246 233 / 0.075);
@@ -127,28 +171,281 @@
     --ink-3: #7d7264;
     --line: rgb(255 244 228 / 0.13);
     --line-2: rgb(255 244 228 / 0.19);
-
     --accent: #e8b26a;
     --accent-soft: rgb(232 178 106 / 0.16);
-    --good: #8cbd81;
-    --warn: #dd9160;
-
+    --on-accent: #171310;
+    --good: #e8b26a;
+    --warn: #e08585;
     --lamp: rgb(255 231 195 / 0.3);
     --floor: rgb(0 0 0 / 0.72);
-    --grain: 0.055;
-
     --raised: rgb(28 23 20 / 0.94);
     --island: rgb(44 36 31 / 0.9);
-    --bar: #1d1714;
-    --glass-edge: rgb(255 246 235 / 0.34);
-    --glass-inner: rgb(255 246 235 / 0.045);
-    --sheen: rgb(255 246 235 / 0.12);
-    --bar-lip: rgb(255 246 235 / 0.05);
-    --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
-    --blur: 28px;
-
-    color-scheme: dark;
+  }
 }
+:root[data-palette="brass"][data-theme="dark"] {
+  --page: #110d0b;
+  --page-2: rgb(255 246 233 / 0.052);
+  --card: rgb(255 246 233 / 0.075);
+  --ink: #f6f1e8;
+  --ink-2: #b0a493;
+  --ink-3: #7d7264;
+  --line: rgb(255 244 228 / 0.13);
+  --line-2: rgb(255 244 228 / 0.19);
+  --accent: #e8b26a;
+  --accent-soft: rgb(232 178 106 / 0.16);
+  --on-accent: #171310;
+  --good: #e8b26a;
+  --warn: #e08585;
+  --lamp: rgb(255 231 195 / 0.3);
+  --floor: rgb(0 0 0 / 0.72);
+  --raised: rgb(28 23 20 / 0.94);
+  --island: rgb(44 36 31 / 0.9);
+}
+
+/* Vigil. */
+:root[data-palette="vigil"] {
+  --page: #ccd0dd;
+  --page-2: rgb(60 66 90 / 0.08);
+  --card: rgb(253 253 255 / 0.62);
+  --ink: #14161f;
+  --ink-2: #4f5462;
+  --ink-3: #7b8090;
+  --line: rgb(60 66 90 / 0.16);
+  --line-2: rgb(60 66 90 / 0.3);
+  --accent: #8a6a24;
+  --accent-soft: rgb(138 106 36 / 0.14);
+  --on-accent: #fdfcf7;
+  --good: #8a6a24;
+  --warn: #a33b3b;
+  --lamp: rgb(252 253 255 / 0.96);
+  --floor: rgb(48 54 78 / 0.26);
+  --raised: rgb(251 252 255 / 0.9);
+  --island: rgb(253 253 255 / 0.84);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="vigil"]:not([data-theme="light"]) {
+    --page: #0b0e18;
+    --page-2: rgb(230 236 255 / 0.05);
+    --card: rgb(230 236 255 / 0.075);
+    --ink: #eef0f8;
+    --ink-2: #a4a9bd;
+    --ink-3: #6f7488;
+    --line: rgb(230 236 255 / 0.13);
+    --line-2: rgb(230 236 255 / 0.2);
+    --accent: #e2c88a;
+    --accent-soft: rgb(226 200 138 / 0.16);
+    --on-accent: #14161f;
+    --good: #e2c88a;
+    --warn: #e08585;
+    --lamp: rgb(220 226 255 / 0.24);
+    --floor: rgb(0 0 0 / 0.72);
+    --raised: rgb(17 21 32 / 0.94);
+    --island: rgb(24 29 43 / 0.9);
+  }
+}
+:root[data-palette="vigil"][data-theme="dark"] {
+  --page: #0b0e18;
+  --page-2: rgb(230 236 255 / 0.05);
+  --card: rgb(230 236 255 / 0.075);
+  --ink: #eef0f8;
+  --ink-2: #a4a9bd;
+  --ink-3: #6f7488;
+  --line: rgb(230 236 255 / 0.13);
+  --line-2: rgb(230 236 255 / 0.2);
+  --accent: #e2c88a;
+  --accent-soft: rgb(226 200 138 / 0.16);
+  --on-accent: #14161f;
+  --good: #e2c88a;
+  --warn: #e08585;
+  --lamp: rgb(220 226 255 / 0.24);
+  --floor: rgb(0 0 0 / 0.72);
+  --raised: rgb(17 21 32 / 0.94);
+  --island: rgb(24 29 43 / 0.9);
+}
+
+/* Slate. */
+:root[data-palette="slate"] {
+  --page: #cfd6dd;
+  --page-2: rgb(50 70 90 / 0.08);
+  --card: rgb(252 254 255 / 0.62);
+  --ink: #12171c;
+  --ink-2: #4e5761;
+  --ink-3: #7b848f;
+  --line: rgb(50 70 90 / 0.16);
+  --line-2: rgb(50 70 90 / 0.3);
+  --accent: #2f5f8f;
+  --accent-soft: rgb(47 95 143 / 0.14);
+  --on-accent: #fbfdff;
+  --good: #2f5f8f;
+  --warn: #9a4a22;
+  --lamp: rgb(250 253 255 / 0.96);
+  --floor: rgb(45 60 75 / 0.26);
+  --raised: rgb(250 253 255 / 0.9);
+  --island: rgb(252 254 255 / 0.84);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="slate"]:not([data-theme="light"]) {
+    --page: #0e1013;
+    --page-2: rgb(232 241 250 / 0.05);
+    --card: rgb(232 241 250 / 0.075);
+    --ink: #eef2f6;
+    --ink-2: #a3aebb;
+    --ink-3: #6f7986;
+    --line: rgb(232 241 250 / 0.13);
+    --line-2: rgb(232 241 250 / 0.2);
+    --accent: #8fb4d9;
+    --accent-soft: rgb(143 180 217 / 0.16);
+    --on-accent: #0f141a;
+    --good: #8fb4d9;
+    --warn: #e08585;
+    --lamp: rgb(214 228 245 / 0.26);
+    --floor: rgb(0 0 0 / 0.72);
+    --raised: rgb(20 25 31 / 0.94);
+    --island: rgb(28 34 42 / 0.9);
+  }
+}
+:root[data-palette="slate"][data-theme="dark"] {
+  --page: #0e1013;
+  --page-2: rgb(232 241 250 / 0.05);
+  --card: rgb(232 241 250 / 0.075);
+  --ink: #eef2f6;
+  --ink-2: #a3aebb;
+  --ink-3: #6f7986;
+  --line: rgb(232 241 250 / 0.13);
+  --line-2: rgb(232 241 250 / 0.2);
+  --accent: #8fb4d9;
+  --accent-soft: rgb(143 180 217 / 0.16);
+  --on-accent: #0f141a;
+  --good: #8fb4d9;
+  --warn: #e08585;
+  --lamp: rgb(214 228 245 / 0.26);
+  --floor: rgb(0 0 0 / 0.72);
+  --raised: rgb(20 25 31 / 0.94);
+  --island: rgb(28 34 42 / 0.9);
+}
+
+/* Ember. */
+:root[data-palette="ember"] {
+  --page: #d6d1cc;
+  --page-2: rgb(90 76 68 / 0.08);
+  --card: rgb(255 252 250 / 0.62);
+  --ink: #171412;
+  --ink-2: #56504a;
+  --ink-3: #827b74;
+  --line: rgb(90 76 68 / 0.16);
+  --line-2: rgb(90 76 68 / 0.3);
+  --accent: #b04a22;
+  --accent-soft: rgb(176 74 34 / 0.14);
+  --on-accent: #fffaf7;
+  --good: #b04a22;
+  --warn: #7d6212;
+  --lamp: rgb(255 253 251 / 0.96);
+  --floor: rgb(80 68 60 / 0.26);
+  --raised: rgb(254 251 249 / 0.9);
+  --island: rgb(255 252 250 / 0.84);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="ember"]:not([data-theme="light"]) {
+    --page: #101010;
+    --page-2: rgb(255 244 238 / 0.05);
+    --card: rgb(255 244 238 / 0.075);
+    --ink: #f2efec;
+    --ink-2: #aaa39d;
+    --ink-3: #77716b;
+    --line: rgb(255 244 238 / 0.13);
+    --line-2: rgb(255 244 238 / 0.2);
+    --accent: #e8825a;
+    --accent-soft: rgb(232 130 90 / 0.16);
+    --on-accent: #1a0e09;
+    --good: #e8825a;
+    --warn: #d8b45c;
+    --lamp: rgb(255 226 214 / 0.24);
+    --floor: rgb(0 0 0 / 0.72);
+    --raised: rgb(25 23 21 / 0.94);
+    --island: rgb(34 31 29 / 0.9);
+  }
+}
+:root[data-palette="ember"][data-theme="dark"] {
+  --page: #101010;
+  --page-2: rgb(255 244 238 / 0.05);
+  --card: rgb(255 244 238 / 0.075);
+  --ink: #f2efec;
+  --ink-2: #aaa39d;
+  --ink-3: #77716b;
+  --line: rgb(255 244 238 / 0.13);
+  --line-2: rgb(255 244 238 / 0.2);
+  --accent: #e8825a;
+  --accent-soft: rgb(232 130 90 / 0.16);
+  --on-accent: #1a0e09;
+  --good: #e8825a;
+  --warn: #d8b45c;
+  --lamp: rgb(255 226 214 / 0.24);
+  --floor: rgb(0 0 0 / 0.72);
+  --raised: rgb(25 23 21 / 0.94);
+  --island: rgb(34 31 29 / 0.9);
+}
+
+/* Claret. */
+:root[data-palette="claret"] {
+  --page: #d9cdd0;
+  --page-2: rgb(105 70 78 / 0.08);
+  --card: rgb(255 251 252 / 0.62);
+  --ink: #1a1214;
+  --ink-2: #5d4c50;
+  --ink-3: #877277;
+  --line: rgb(105 70 78 / 0.16);
+  --line-2: rgb(105 70 78 / 0.3);
+  --accent: #8a2f3d;
+  --accent-soft: rgb(138 47 61 / 0.14);
+  --on-accent: #fdf7f8;
+  --good: #8a2f3d;
+  --warn: #7d5a18;
+  --lamp: rgb(255 252 252 / 0.96);
+  --floor: rgb(90 60 66 / 0.26);
+  --raised: rgb(254 250 251 / 0.9);
+  --island: rgb(255 251 252 / 0.84);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="claret"]:not([data-theme="light"]) {
+    --page: #130b0e;
+    --page-2: rgb(255 236 240 / 0.05);
+    --card: rgb(255 236 240 / 0.075);
+    --ink: #f7ecee;
+    --ink-2: #b6a2a6;
+    --ink-3: #7e6b70;
+    --line: rgb(255 236 240 / 0.13);
+    --line-2: rgb(255 236 240 / 0.2);
+    --accent: #c98d88;
+    --accent-soft: rgb(201 141 136 / 0.16);
+    --on-accent: #17090c;
+    --good: #c98d88;
+    --warn: #d8b45c;
+    --lamp: rgb(255 214 216 / 0.24);
+    --floor: rgb(0 0 0 / 0.72);
+    --raised: rgb(31 20 24 / 0.94);
+    --island: rgb(42 27 31 / 0.9);
+  }
+}
+:root[data-palette="claret"][data-theme="dark"] {
+  --page: #130b0e;
+  --page-2: rgb(255 236 240 / 0.05);
+  --card: rgb(255 236 240 / 0.075);
+  --ink: #f7ecee;
+  --ink-2: #b6a2a6;
+  --ink-3: #7e6b70;
+  --line: rgb(255 236 240 / 0.13);
+  --line-2: rgb(255 236 240 / 0.2);
+  --accent: #c98d88;
+  --accent-soft: rgb(201 141 136 / 0.16);
+  --on-accent: #17090c;
+  --good: #c98d88;
+  --warn: #d8b45c;
+  --lamp: rgb(255 214 216 / 0.24);
+  --floor: rgb(0 0 0 / 0.72);
+  --raised: rgb(31 20 24 / 0.94);
+  --island: rgb(42 27 31 / 0.9);
+}
+
 
 @theme inline {
   --color-page: var(--page);

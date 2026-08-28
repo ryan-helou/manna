@@ -220,8 +220,15 @@ class PgStore implements Store {
           `ALTER TABLE plan_members ADD COLUMN IF NOT EXISTS start_day DATE`,
         );
         await this.pool.query(
+          // Everyone in a plan shares its start date. This used to be per
+          // member, so rows carry whatever day that reader happened to join on;
+          // bring them all onto the plan's. Progress is keyed by chapter rather
+          // than by day, so nothing that was read is lost when the numbering
+          // moves underneath it.
           `UPDATE plan_members m SET start_day = p.start_day
-             FROM plans p WHERE p.id = m.plan_id AND m.start_day IS NULL`,
+             FROM plans p
+            WHERE p.id = m.plan_id
+              AND (m.start_day IS NULL OR m.start_day <> p.start_day)`,
         );
         // Progress is per chapter, not per day: days are slices of a schedule
         // that moves when the plan length changes, and chapters are not.

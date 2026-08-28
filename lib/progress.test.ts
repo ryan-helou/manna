@@ -295,21 +295,28 @@ console.log("\npartial days");
   check("and clears the debt", paceFor(whole, "me", addDays(START, 1)).minutesBehind, 0);
 }
 
-console.log("\na late joiner starts at day one");
+console.log("\neveryone in a plan is on the same day");
 {
-  // Ryan starts on the 1st. Sam joins thirty days later. Sam should open the app
-  // on pace at day 1, not thirty days in the hole.
+  // Reversed on 27 August 2026. A late joiner used to begin at their own day
+  // one, which meant two people could both be "on day 40" and be reading
+  // different books. The group only means anything if the day means the same
+  // thing to everybody, so the plan's start date is now the only one there is.
   const joined = addDays(START, 30);
   const p = plan([], ["me", "friend"], { friend: joined });
   check("the creator is where the plan is", currentDay(p, joined, "me"), 31);
-  check("the joiner is on their own day 1", currentDay(p, joined, "friend"), 1);
-  check("and is on pace, not behind", paceFor(p, "friend", joined).status, "on-pace");
-  check("with nothing owed", paceFor(p, "friend", joined).minutesBehind, 0);
-  check("their day 1 falls on the day they joined", dateOfDay(p, 1, "friend"), joined);
-  check("they still start at Genesis 1", chaptersForDay(p, 1)[0], { book: "Genesis", chapter: 1 });
-  check("ten days on they are on day 11", currentDay(p, addDays(joined, 10), "friend"), 11);
-  // The creator is unaffected by someone joining late.
-  check("the creator keeps their own day", currentDay(p, addDays(joined, 10), "me"), 41);
+  check("so is someone who joined this morning", currentDay(p, joined, "friend"), 31);
+  check("their day 1 is the plan's day 1", dateOfDay(p, 1, "friend"), START);
+  check("and it is the same date for everyone", dateOfDay(p, 1, "me"), dateOfDay(p, 1, "friend"));
+  check("day 40 is the same reading for both", chaptersForDay(p, 40), chaptersForDay(p, 40));
+  check("ten days on, both are on day 41", currentDay(p, addDays(joined, 10), "friend"), 41);
+  check("the creator agrees", currentDay(p, addDays(joined, 10), "me"), 41);
+  // A joiner with nothing read is behind, because the group is thirty days in.
+  // That is the honest reading of a shared plan, not a bug.
+  ok(
+    "a joiner with nothing read is behind, not on pace",
+    paceFor(p, "friend", joined).status === "behind",
+    paceFor(p, "friend", joined).status,
+  );
 }
 
 console.log("\nthe days you actually owe");
