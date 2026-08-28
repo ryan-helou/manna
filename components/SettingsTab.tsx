@@ -74,6 +74,61 @@ export function SettingsTab({
     <div className="space-y-6 pb-4">
       <h1 className="serif pt-1 text-3xl font-semibold tracking-tight text-ink">Settings</h1>
 
+      {/* ---- appearance ---- */}
+      <div>
+        <p className="eyebrow text-ink-2">Appearance</p>
+        <div className="mt-2 flex gap-1 rounded-xl border border-line bg-page-2 p-1">
+          {(
+            [
+              ["system", "System", null],
+              ["light", "Light", "sun"],
+              ["dark", "Dark", "moon"],
+            ] as const
+          ).map(([id, label, glyph]) => (
+            <button
+              key={id}
+              onClick={() => onTheme(id)}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                theme === id ? "bg-card text-ink shadow-sm" : "text-ink-2"
+              }`}
+            >
+              {glyph && <Glyph name={glyph} className="h-3.5 w-3.5" />}
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <p className="eyebrow mt-5 text-ink-2">Colour</p>
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
+          {PALETTES.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onPalette(p.id)}
+              aria-pressed={palette === p.id}
+              className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition ${
+                palette === p.id
+                  ? "border-accent bg-accent-soft"
+                  : "border-line bg-page-2 hover:border-line-2"
+              }`}
+            >
+              <span
+                aria-hidden
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line-2"
+                style={{ background: p.ground }}
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: p.accent }} />
+              </span>
+              <span className="min-w-0">
+                <span className={`block truncate text-sm font-semibold ${palette === p.id ? "text-accent" : "text-ink"}`}>
+                  {p.name}
+                </span>
+                <span className="block truncate text-[0.6875rem] text-ink-3">{p.note}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <InviteCard planName={plan.name} code={plan.joinCode} />
 
       {/* ---- you ---- */}
@@ -325,60 +380,6 @@ export function SettingsTab({
         onHour={(hour) => void onSaveProfile({ reminderHour: hour })}
       />
 
-      {/* ---- appearance ---- */}
-      <div>
-        <p className="eyebrow text-ink-2">Appearance</p>
-        <div className="mt-2 flex gap-1 rounded-xl border border-line bg-page-2 p-1">
-          {(
-            [
-              ["system", "System", null],
-              ["light", "Light", "sun"],
-              ["dark", "Dark", "moon"],
-            ] as const
-          ).map(([id, label, glyph]) => (
-            <button
-              key={id}
-              onClick={() => onTheme(id)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                theme === id ? "bg-card text-ink shadow-sm" : "text-ink-2"
-              }`}
-            >
-              {glyph && <Glyph name={glyph} className="h-3.5 w-3.5" />}
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <p className="eyebrow mt-5 text-ink-2">Colour</p>
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
-          {PALETTES.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => onPalette(p.id)}
-              aria-pressed={palette === p.id}
-              className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition ${
-                palette === p.id
-                  ? "border-accent bg-accent-soft"
-                  : "border-line bg-page-2 hover:border-line-2"
-              }`}
-            >
-              <span
-                aria-hidden
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line-2"
-                style={{ background: p.ground }}
-              >
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: p.accent }} />
-              </span>
-              <span className="min-w-0">
-                <span className={`block truncate text-sm font-semibold ${palette === p.id ? "text-accent" : "text-ink"}`}>
-                  {p.name}
-                </span>
-                <span className="block truncate text-[0.6875rem] text-ink-3">{p.note}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       <button
         onClick={onSignOut}

@@ -340,7 +340,7 @@ export function AppShell({
           nothing to repaint. The island inside it is an ordinary element that
           happens to sit there, which is the safest way to put a blurred surface
           at the bottom of an iOS screen. */}
-      <nav className="pointer-events-none fixed inset-x-0 bottom-0 mx-auto w-full max-w-md px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))]">
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 mx-auto w-full max-w-md px-3 pb-[max(0.45rem,env(safe-area-inset-bottom))]">
         <div className="pointer-events-auto flex gap-1 rounded-[1.75rem] border border-line p-1.5 glass-island">
           {TABS.map((t) => (
             <button

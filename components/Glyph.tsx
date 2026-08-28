@@ -79,11 +79,15 @@ export function Glyph({
         </svg>
       );
     case "settings":
+      // A cog, not the sliders this used to be. Settings is a tab of its own
+      // now, and a tab needs an icon a reader recognises without the label.
+      // Eight teeth rather than the usual twelve: at twenty pixels the extra
+      // four close up into a ring.
       return (
         <svg {...common}>
-          <path d="M4 7.5h16M4 16.5h16" />
-          <circle cx="9.5" cy="7.5" r="2.3" />
-          <circle cx="15" cy="16.5" r="2.3" />
+          <circle cx="12" cy="12" r="3.1" />
+          <path d="M12 2.6v2.5M12 18.9v2.5M21.4 12h-2.5M5.1 12H2.6M18.65 5.35l-1.77 1.77M7.12 16.88l-1.77 1.77M18.65 18.65l-1.77-1.77M7.12 7.12 5.35 5.35" />
+          <circle cx="12" cy="12" r="8.4" strokeOpacity="0.45" />
         </svg>
       );
     case "arrow-right":
