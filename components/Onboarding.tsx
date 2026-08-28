@@ -27,7 +27,7 @@ export function Onboarding({
   const [error, setError] = useState<string | null>(null);
 
   const field =
-    "mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-3.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
+    "mt-2 w-full rounded-xl border border-line-2 bg-page-2 px-4 py-3.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-12">
@@ -85,7 +85,7 @@ export function Onboarding({
             autoCorrect="off"
             spellCheck={false}
             enterKeyHint="go"
-            className="stat mt-2 w-full rounded-xl border-2 border-line-2 bg-page px-4 py-5 text-center text-4xl font-medium uppercase tracking-[0.35em] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+            className="stat mt-2 w-full rounded-xl border-2 border-line-2 bg-page-2 px-4 py-5 text-center text-4xl font-medium uppercase tracking-[0.35em] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
           <p className="mt-2 text-sm text-ink-2">
             Whoever started the plan can find it in their settings. Upper or lower
@@ -99,7 +99,7 @@ export function Onboarding({
           <button
             type="submit"
             disabled={busy || code.length < 4}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
           >
             Join the plan
             <Glyph name="arrow-right" className="h-4 w-4" />
@@ -155,7 +155,7 @@ export function Onboarding({
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
           >
             Start reading
             <Glyph name="arrow-right" className="h-4 w-4" />

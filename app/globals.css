@@ -3,10 +3,22 @@
 /*
   Manna. Bread for the day, not for the week.
 
-  The palette is paper and ink: a warm, unbleached page in the light, deep
-  lamp-lit brown in the dark, and one amber accent that carries every piece of
-  progress. Nothing here shouts, because this is a thing you open at six in the
-  morning before you have spoken to anyone.
+  The material is glass over a lit room. Everything you touch is a pane: a thin
+  translucent sheet that takes its colour from whatever is behind it, catches a
+  highlight along its top edge, and casts a soft shadow onto the page. Behind
+  all of it sits a fixed backdrop of slow warm light, so a panel moving over it
+  changes as it moves.
+
+  Two rules keep it from turning to soup:
+
+  1. ONE blurring layer per stack. A card blurs the backdrop; the rows inside it
+     are flat translucent fills. Blur inside blur reads as fog and costs a
+     repaint on every scrolled frame.
+  2. NOTHING FIXED IS BLURRED. iOS repaints a backdrop-filtered fixed bar at a
+     stale position during momentum scrolling, so it detaches and floats over
+     the middle of the screen. The tab bar uses `glass-bar`, which is opaque and
+     tinted to sit in the same family without the filter. Learned the hard way,
+     twice: AmaComp's leaderboard and Manna's own Together tab.
 */
 @theme {
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
@@ -14,60 +26,120 @@
   --font-mono: var(--font-mono-face), ui-monospace, monospace;
 }
 
-/* Light: unbleached paper. */
+/* ---------------------------------------------------------------------------
+   Light: glass over unbleached paper, lit from above.
+   --------------------------------------------------------------------------- */
 :root {
-  --page: #faf7f1;
-  --page-2: #f2ece1;
-  --card: #ffffff;
-  --ink: #1c1815;
-  --ink-2: #6b6155;
-  --ink-3: #9c9284;
-  --line: #e2d9c9;
-  --line-2: #cfc3ad;
+  --page: #efe9df;
+  /* Surfaces are translucent COLOURS rather than a separate set of classes, so
+     `bg-card`, `bg-page-2` and `border-line` keep working everywhere they
+     already appear, including inside the conditional tone strings. The `glass`
+     utility then adds only what a colour cannot carry: the blur, the lift and
+     the lit edge. */
+  --page-2: rgb(255 255 255 / 0.46);
+  --card: rgb(255 253 249 / 0.66);
+  --ink: #191512;
+  --ink-2: #5f564b;
+  --ink-3: #8d8375;
+  --line: rgb(120 104 82 / 0.17);
+  --line-2: rgb(120 104 82 / 0.28);
 
-  --accent: #a56724;
-  --accent-soft: #eadbc2;
-  --good: #4a7a44;
-  --warn: #a8542a;
+  --accent: #9a5f1e;
+  --accent-soft: rgb(154 95 30 / 0.15);
+  --good: #3f7139;
+  --warn: #a04e26;
+
+  /* The light behind the glass. */
+  --bloom-warm: #e8a94e;
+  --bloom-rose: #d08a6c;
+  --bloom-cool: #7fa6c2;
+  --bloom-violet: #9b8fc0;
+  --bloom-strength: 52%;
+  --grain: 0.045;
+
+  /* The panes themselves. */
+  --raised: rgb(252 249 243 / 0.93);
+  --bar: #f4efe6;
+  --glass-edge: rgb(255 255 255 / 0.95);
+  --glass-inner: rgb(255 255 255 / 0.5);
+  --sheen: rgb(255 255 255 / 0.5);
+  --bar-lip: rgb(255 255 255 / 0.6);
+    --glass-shadow: 0 18px 40px -16px rgb(78 58 34 / 0.28), 0 2px 8px -4px rgb(78 58 34 / 0.16);
+  --blur: 26px;
 
   color-scheme: light;
 }
 
-/* Dark: the same page under a lamp. */
+/* ---------------------------------------------------------------------------
+   Dark: the same panes in a lamp-lit room. This is the one most people see at
+   six in the morning, and the one the material was designed for.
+   --------------------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --page: #14110e;
-    --page-2: #1c1815;
-    --card: #211c18;
-    --ink: #f3ede2;
-    --ink-2: #a99c8b;
-    --ink-3: #776c5e;
-    --line: #2f2822;
-    --line-2: #443a31;
+    --page: #0d0a08;
+    --page-2: rgb(255 246 233 / 0.052);
+    --card: rgb(255 246 233 / 0.075);
+    --ink: #f6f1e8;
+    --ink-2: #b0a493;
+    --ink-3: #7d7264;
+    --line: rgb(255 244 228 / 0.13);
+    --line-2: rgb(255 244 228 / 0.19);
 
-    --accent: #e0a75a;
-    --accent-soft: #3a2d1c;
-    --good: #86b57c;
-    --warn: #d78a56;
+    --accent: #e8b26a;
+    --accent-soft: rgb(232 178 106 / 0.16);
+    --good: #8cbd81;
+    --warn: #dd9160;
+
+    --bloom-warm: #e89a2c;
+    --bloom-rose: #b8523f;
+    --bloom-cool: #2f6f8c;
+    --bloom-violet: #5b3f7d;
+    --bloom-strength: 96%;
+    --grain: 0.055;
+
+    --raised: rgb(28 23 20 / 0.94);
+    --bar: #1d1714;
+    --glass-edge: rgb(255 246 235 / 0.3);
+    --glass-inner: rgb(255 246 235 / 0.045);
+    --sheen: rgb(255 246 235 / 0.09);
+    --bar-lip: rgb(255 246 235 / 0.05);
+    --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
+    --blur: 28px;
 
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --page: #14110e;
-  --page-2: #1c1815;
-  --card: #211c18;
-  --ink: #f3ede2;
-  --ink-2: #a99c8b;
-  --ink-3: #776c5e;
-  --line: #2f2822;
-  --line-2: #443a31;
+    --page: #0d0a08;
+  --page-2: rgb(255 246 233 / 0.052);
+  --card: rgb(255 246 233 / 0.075);
+  --ink: #f6f1e8;
+  --ink-2: #b0a493;
+  --ink-3: #7d7264;
+  --line: rgb(255 244 228 / 0.13);
+  --line-2: rgb(255 244 228 / 0.19);
 
-  --accent: #e0a75a;
-  --accent-soft: #3a2d1c;
-  --good: #86b57c;
-  --warn: #d78a56;
+  --accent: #e8b26a;
+  --accent-soft: rgb(232 178 106 / 0.16);
+  --good: #8cbd81;
+  --warn: #dd9160;
+
+  --bloom-warm: #e89a2c;
+  --bloom-rose: #b8523f;
+  --bloom-cool: #2f6f8c;
+  --bloom-violet: #5b3f7d;
+  --bloom-strength: 96%;
+  --grain: 0.055;
+
+  --raised: rgb(28 23 20 / 0.94);
+  --bar: #1d1714;
+  --glass-edge: rgb(255 246 235 / 0.3);
+  --glass-inner: rgb(255 246 235 / 0.045);
+  --sheen: rgb(255 246 235 / 0.09);
+  --bar-lip: rgb(255 246 235 / 0.05);
+  --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
+  --blur: 28px;
 
   color-scheme: dark;
 }
@@ -87,26 +159,149 @@
   --color-warn: var(--warn);
 }
 
-html,
-body {
-  background: var(--page);
-  color: var(--ink);
+/* ---------------------------------------------------------------------------
+   The room behind the glass.
+   --------------------------------------------------------------------------- */
+
+html {
+  background-color: var(--page);
 }
 
 body {
   font-family: var(--font-body);
+  color: var(--ink);
   /* Home-screen apps sit under the notch and over the home indicator. */
   padding-top: env(safe-area-inset-top);
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
-  /* A first light behind the page: dawn at the top edge, gone by the fold. */
-  background-image: radial-gradient(
-    120% 42% at 50% -6%,
-    color-mix(in srgb, var(--accent) 13%, transparent) 0%,
-    transparent 62%
-  );
-  background-attachment: fixed;
 }
+
+/*
+  A fixed pane of light, rather than `background-attachment: fixed`, which iOS
+  treats as a suggestion. Three slow blooms: dawn along the top, a copper cast
+  low on the left, one cool note bottom right so the warm side has something to
+  be warm against. The grain on top is what stops a gradient this wide from
+  banding, and gives the light somewhere to sit.
+*/
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--page);
+  background-image:
+    radial-gradient(
+      132% 38% at 50% -16%,
+      color-mix(in srgb, var(--bloom-warm) var(--bloom-strength), transparent) 0%,
+      transparent 72%
+    ),
+    radial-gradient(
+      78% 40% at 4% 24%,
+      color-mix(in srgb, var(--bloom-rose) calc(var(--bloom-strength) * 0.72), transparent) 0%,
+      transparent 66%
+    ),
+    radial-gradient(
+      70% 38% at 96% 52%,
+      color-mix(in srgb, var(--bloom-violet) calc(var(--bloom-strength) * 0.66), transparent) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      96% 44% at 20% 96%,
+      color-mix(in srgb, var(--bloom-cool) calc(var(--bloom-strength) * 0.8), transparent) 0%,
+      transparent 66%
+    );
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* ---------------------------------------------------------------------------
+   The panes.
+   --------------------------------------------------------------------------- */
+
+/*
+  A card. Blurs what is behind it, lifts off the page, and catches a highlight
+  along its top edge the way a real sheet of glass does. The saturation boost is
+  most of what separates glass from grey plastic: it pulls the colour out of the
+  backdrop instead of averaging it away.
+*/
+@utility glass {
+  background-image: linear-gradient(
+    154deg,
+    var(--sheen) 0%,
+    transparent 44%,
+    transparent 100%
+  );
+  backdrop-filter: blur(var(--blur)) saturate(180%) brightness(1.06);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(180%) brightness(1.06);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 0 var(--glass-edge),
+    inset 0 0 0 1px var(--glass-inner);
+}
+
+/*
+  Anything sitting inside a pane: a chapter row, a quiz option, a progress
+  track. Flat on purpose. Two sheets of blurred glass stacked read as fog, and
+  each one costs a repaint on every scrolled frame.
+*/
+/*
+  Sheets, menus and the milestone card: nearer the eye, so denser, blurred
+  harder, and carrying a deeper shadow. These sit above a scrim and have to stay
+  legible over whatever the page happens to be showing.
+*/
+@utility glass-raised {
+  background-color: var(--raised);
+  background-image: linear-gradient(154deg, var(--sheen) 0%, transparent 46%);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  box-shadow:
+    0 32px 64px -24px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 0 var(--glass-edge);
+}
+
+/*
+  Fixed bars ONLY. Opaque, tinted to sit in the same family, and pinned to its
+  own compositing layer. It must never gain a backdrop-filter: see the note at
+  the top of this file.
+*/
+@utility glass-bar {
+  background-color: var(--bar);
+  background-image: linear-gradient(180deg, var(--bar-lip) 0%, transparent 42%);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-edge),
+    0 -14px 34px -18px rgb(0 0 0 / 0.7);
+  transform: translateZ(0);
+}
+
+/*
+  The one solid thing in the app. Light coming through the glass rather than a
+  pane of it, so the primary action reads as the lit object on the screen.
+*/
+@utility accent-fill {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 92%, white) 0%,
+    var(--accent) 58%,
+    color-mix(in srgb, var(--accent) 88%, black) 100%
+  );
+  box-shadow:
+    0 10px 26px -10px color-mix(in srgb, var(--accent) 62%, transparent),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.34);
+}
+
+/* ---------------------------------------------------------------------------
+   Type.
+   --------------------------------------------------------------------------- */
 
 /* Scripture references and headings: a serif, because this is a book. */
 .serif {
@@ -148,6 +343,10 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ---------------------------------------------------------------------------
+   Motion.
+   --------------------------------------------------------------------------- */
 
 /* The tick landing: a quick, satisfied settle rather than a bounce. */
 @keyframes tick-in {

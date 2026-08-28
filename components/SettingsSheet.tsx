@@ -66,7 +66,7 @@ export function SettingsSheet({
   const dirty = name !== plan.name || months !== plan.months;
 
   const field =
-    "mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-3 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none disabled:opacity-60";
+    "mt-2 w-full rounded-xl border border-line-2 bg-page-2 px-4 py-3 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none disabled:opacity-60";
 
   return (
     <Sheet title="Settings" onClose={onClose}>
@@ -121,7 +121,7 @@ export function SettingsSheet({
                   setTimeout(() => setProfileSaved(false), 1800);
                 }
               }}
-              className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
+              className="mt-3 w-full rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
             >
               Save
             </button>
@@ -179,7 +179,7 @@ export function SettingsSheet({
                     setTimeout(() => setPwSaved(false), 2200);
                   }
                 }}
-                className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+                className="mt-3 w-full rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
               >
                 Update password
               </button>
@@ -243,7 +243,7 @@ export function SettingsSheet({
                   setTimeout(() => setSaved(false), 1800);
                 }
               }}
-              className="mt-4 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
+              className="mt-4 w-full rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
             >
               Save changes
             </button>

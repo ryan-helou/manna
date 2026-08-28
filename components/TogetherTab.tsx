@@ -38,7 +38,7 @@ export function TogetherTab({
 
   return (
     <div className="space-y-5 pb-4">
-      <section className="rise-in rounded-2xl border border-line bg-card p-5">
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5">
         <p className="eyebrow flex items-center gap-1.5 text-ink-2">
           <Glyph name="users" className="h-3.5 w-3.5" />
           Today
@@ -78,7 +78,7 @@ export function TogetherTab({
         )}
       </section>
 
-      <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "60ms" }}>
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5" style={{ animationDelay: "60ms" }}>
         <div className="flex items-baseline justify-between gap-3">
           <p className="eyebrow flex items-center gap-1.5 text-ink-2">
             <Glyph name="chart" className="h-3.5 w-3.5" />

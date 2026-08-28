@@ -114,7 +114,7 @@ function NoteBody({
         </button>
 
         {picking && (
-          <span className="flex items-center gap-1 rounded-full border border-line-2 bg-page px-2 py-1">
+          <span className="flex items-center gap-1 rounded-full border border-line-2 bg-page-2 px-2 py-1">
             {REACTIONS.map((e) => (
               <button
                 key={e}
@@ -179,7 +179,7 @@ function ReplyBox({
         rows={2}
         autoFocus
         placeholder="Say something back"
-        className="w-full resize-none rounded-xl border border-line-2 bg-page px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+        className="w-full resize-none rounded-xl border border-line-2 bg-page-2 px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
       />
       {error && (
         <p role="alert" className="mt-1.5 text-sm font-medium text-warn">
@@ -190,7 +190,7 @@ function ReplyBox({
         <button
           type="submit"
           disabled={busy || !draft.trim()}
-          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-page transition disabled:opacity-50"
+          className="rounded-lg bg-accent accent-fill px-3 py-1.5 text-xs font-semibold text-page transition disabled:opacity-50"
         >
           Post
         </button>

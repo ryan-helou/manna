@@ -93,7 +93,7 @@ export function BookIndexSheet({
                           className={`stat h-7 min-w-7 rounded-md border px-1 text-xs transition ${
                             isRead
                               ? "border-accent bg-accent-soft text-ink"
-                              : "border-line-2 bg-page text-ink-3 hover:border-accent"
+                              : "border-line-2 bg-page-2 text-ink-3 hover:border-accent"
                           }`}
                         >
                           {c}

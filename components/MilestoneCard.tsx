@@ -40,13 +40,13 @@ export function MilestoneCard({
       <button
         aria-label="Close"
         onClick={onClose}
-        className="absolute inset-0 bg-page/90 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`${milestone.label} complete`}
-        className="rise-in relative w-full max-w-sm rounded-3xl border border-line bg-card p-8 text-center shadow-2xl"
+        className="rise-in relative w-full max-w-sm rounded-3xl border border-line glass-raised p-8 text-center shadow-2xl"
       >
         <span className="tick-in mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-accent bg-accent-soft text-accent">
           <Glyph name="seal" className="h-8 w-8" />
@@ -60,7 +60,7 @@ export function MilestoneCard({
 
         <button
           onClick={onClose}
-          className="mt-7 w-full rounded-xl bg-accent px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99]"
+          className="mt-7 w-full rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99]"
         >
           Keep going
         </button>

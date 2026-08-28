@@ -28,7 +28,7 @@ export function JourneyTab({
 
   return (
     <div className="space-y-5 pb-4">
-      <section className="rise-in rounded-2xl border border-line bg-card p-5">
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5">
         <p className="eyebrow flex items-center gap-1.5 text-ink-2">
           <Glyph name="chart" className="h-3.5 w-3.5" />
           So far
@@ -73,7 +73,7 @@ export function JourneyTab({
 
       <button
         onClick={() => setBooksOpen(true)}
-        className="rise-in flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-card p-5 text-left transition hover:border-accent"
+        className="rise-in flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-card glass p-5 text-left transition hover:border-accent"
         style={{ animationDelay: "40ms" }}
       >
         <span>
@@ -88,7 +88,7 @@ export function JourneyTab({
         <Glyph name="arrow-right" className="h-4 w-4 shrink-0 text-ink-3" />
       </button>
 
-      <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "60ms" }}>
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5" style={{ animationDelay: "60ms" }}>
         <p className="eyebrow flex items-center gap-1.5 text-ink-2">
           <Glyph name="calendar" className="h-3.5 w-3.5" />
           Every day of the plan
@@ -99,7 +99,7 @@ export function JourneyTab({
         </div>
       </section>
 
-      <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "120ms" }}>
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5" style={{ animationDelay: "120ms" }}>
         <p className="eyebrow flex items-center gap-1.5 text-ink-2">
           <Glyph name="seal" className="h-3.5 w-3.5" />
           Milestones

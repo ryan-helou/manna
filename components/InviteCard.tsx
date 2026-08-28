@@ -23,7 +23,7 @@ export function InviteCard({ planName, code }: { planName: string; code: string 
   }, make an account, and enter the code ${code}.`;
 
   return (
-    <div className="rounded-2xl border border-accent/40 bg-accent-soft/40 p-5">
+    <div className="rounded-2xl border border-accent/40 bg-accent-soft/40 glass p-5">
       <p className="eyebrow flex items-center gap-1.5 text-ink-2">
         <Glyph name="users" className="h-3.5 w-3.5" />
         Invite someone
@@ -65,7 +65,7 @@ export function InviteCard({ planName, code }: { planName: string; code: string 
               // A cancelled share sheet is not a failure.
             }
           }}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99]"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99]"
         >
           <Glyph name="link" className="h-4 w-4" />
           Send invite

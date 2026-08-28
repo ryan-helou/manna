@@ -171,7 +171,7 @@ export function NotificationSetup({
             id="reminder-hour"
             value={reminderHour ?? DEFAULT_REMINDER_HOUR}
             onChange={(e) => onHour(Number(e.target.value))}
-            className="mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-line-2 bg-page-2 px-4 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"
           >
             {Array.from({ length: 24 }, (_, h) => h).map((h) => (
               <option key={h} value={h}>

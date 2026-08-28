@@ -64,7 +64,7 @@ export function AddPlanSheet({
             spellCheck={false}
             enterKeyHint="go"
             aria-label="Join code"
-            className="stat w-full rounded-xl border-2 border-line-2 bg-page px-4 py-4 text-center text-3xl font-medium uppercase tracking-[0.35em] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+            className="stat w-full rounded-xl border-2 border-line-2 bg-page-2 px-4 py-4 text-center text-3xl font-medium uppercase tracking-[0.35em] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
           {error && (
             <p role="alert" className="mt-3 text-sm font-medium text-warn">
@@ -74,7 +74,7 @@ export function AddPlanSheet({
           <button
             type="submit"
             disabled={busy || code.length < 4}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
           >
             Join
             <Glyph name="arrow-right" className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function AddPlanSheet({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Bible in a year"
-            className="mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-3.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-line-2 bg-page-2 px-4 py-3.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
 
           <label htmlFor="new-plan-months" className="eyebrow mt-5 block text-ink-2">
@@ -126,7 +126,7 @@ export function AddPlanSheet({
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
           >
             Start it
             <Glyph name="arrow-right" className="h-4 w-4" />

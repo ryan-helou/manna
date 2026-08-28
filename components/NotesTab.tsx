@@ -44,7 +44,7 @@ export function NotesTab({
   return (
     <div className="space-y-5 pb-4">
       {feed.length === 0 ? (
-        <section className="rise-in rounded-2xl border border-line bg-card p-5">
+        <section className="rise-in rounded-2xl border border-line bg-card glass p-5">
           <p className="eyebrow flex items-center gap-1.5 text-ink-2">
             <Glyph name="note" className="h-3.5 w-3.5" />
             Nothing written yet
@@ -58,7 +58,7 @@ export function NotesTab({
         groups.map((g, i) => (
           <section
             key={g.key}
-            className="rise-in rounded-2xl border border-line bg-card p-5"
+            className="rise-in rounded-2xl border border-line bg-card glass p-5"
             style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}
           >
             <div className="flex items-baseline justify-between gap-3">

@@ -285,15 +285,17 @@ export function AppShell({
           mid-scroll before snapping back. AmaComp's tab bar did exactly this
           over its leaderboard. translateZ(0) gives the bar its own compositing
           layer so it stays put. */}
-      <nav className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-md border-t border-line bg-page px-4 pb-[env(safe-area-inset-bottom)] [transform:translateZ(0)]">
-        <div className="flex">
+      <nav className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-md border-t border-line px-4 pb-[env(safe-area-inset-bottom)] glass-bar">
+        <div className="flex gap-1 py-1.5">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               aria-current={tab === t.id ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center gap-1 py-3 text-[0.6875rem] font-semibold transition ${
-                tab === t.id ? "text-accent" : "text-ink-3"
+              className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2.5 text-[0.6875rem] font-semibold transition ${
+                tab === t.id
+                  ? "border border-accent/25 bg-accent-soft text-accent"
+                  : "border border-transparent text-ink-3"
               }`}
             >
               <Glyph name={t.glyph} className="h-5 w-5" />
@@ -406,7 +408,7 @@ function PlanSwitcher({
             className="fixed inset-0 z-10"
             onClick={() => setOpen(false)}
           />
-          <ul className="absolute left-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-xl border border-line bg-card py-1 shadow-xl">
+          <ul className="absolute left-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-xl border border-line py-1 glass-raised">
             {plans.map((p) => (
               <li key={p.id}>
                 <button

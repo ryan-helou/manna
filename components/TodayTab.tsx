@@ -137,7 +137,7 @@ export function TodayTab({
   return (
     <div className="space-y-5 pb-4">
       {/* ---- the reading ---- */}
-      <section className="rise-in rounded-2xl border border-line bg-card p-5">
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5">
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={() => go(-1)}
@@ -234,7 +234,7 @@ export function TodayTab({
 
       {/* ---- what you actually owe ---- */}
       {missed.length > 0 && (
-        <section className="rise-in rounded-2xl border border-warn/30 bg-card p-5" style={{ animationDelay: "30ms" }}>
+        <section className="rise-in rounded-2xl border border-warn/30 bg-card glass p-5" style={{ animationDelay: "30ms" }}>
           <p className="eyebrow flex items-center gap-1.5 text-warn">
             <Glyph name="arrow-down" className="h-3.5 w-3.5" />
             {missed.length} day{missed.length === 1 ? "" : "s"} to catch up
@@ -275,7 +275,7 @@ export function TodayTab({
       )}
 
       {/* ---- pace and progress: always about now, whatever day is on screen ---- */}
-      <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "60ms" }}>
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5" style={{ animationDelay: "60ms" }}>
         <div className="flex items-center justify-between gap-3">
           <PaceBadge pace={pace} />
           {streak > 0 && (
@@ -309,7 +309,7 @@ export function TodayTab({
 
       {/* ---- verse of the day ---- */}
       {pick && (
-        <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "120ms" }}>
+        <section className="rise-in rounded-2xl border border-line bg-card glass p-5" style={{ animationDelay: "120ms" }}>
           <p className="eyebrow flex items-center gap-1.5 text-ink-2">
             <Glyph name="quote" className="h-3.5 w-3.5" />
             {isToday ? "Verse of the day" : "Verse for this day"}
@@ -355,7 +355,7 @@ export function TodayTab({
       {isToday && <DailyQuiz questions={quiz} planId={plan.id} day={day} />}
 
       {/* ---- shared notes ---- */}
-      <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "180ms" }}>
+      <section className="rise-in rounded-2xl border border-line bg-card glass p-5" style={{ animationDelay: "180ms" }}>
         <p className="eyebrow flex items-center gap-1.5 text-ink-2">
           <Glyph name="note" className="h-3.5 w-3.5" />
           {isToday ? "Notes on today" : `Notes on day ${day}`}
@@ -438,7 +438,7 @@ export function TodayTab({
                   ? "Add to the conversation"
                   : "What stood out to you?"
             }
-            className="w-full resize-none rounded-xl border border-line-2 bg-page px-4 py-3 text-[0.9375rem] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+            className="w-full resize-none rounded-xl border border-line-2 bg-page-2 px-4 py-3 text-[0.9375rem] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
           {noteError && (
             <p role="alert" className="mt-2 text-sm font-medium text-warn">
@@ -449,7 +449,7 @@ export function TodayTab({
             <button
               type="submit"
               disabled={busy}
-              className="mt-2 flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
+              className="mt-2 flex items-center gap-1.5 rounded-lg bg-accent accent-fill px-4 py-2 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
             >
               <Glyph name="plus" className="h-4 w-4" />
               Post

@@ -50,7 +50,7 @@ export function DailyQuiz({
   const finished = answered === questions.length;
 
   return (
-    <section className="rise-in rounded-2xl border border-line bg-card p-5" style={{ animationDelay: "150ms" }}>
+    <section className="rise-in rounded-2xl border border-line bg-card glass p-5" style={{ animationDelay: "150ms" }}>
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}

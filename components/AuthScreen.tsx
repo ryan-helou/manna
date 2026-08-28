@@ -33,7 +33,7 @@ export function AuthScreen({
   }
 
   const field =
-    "mt-2 w-full rounded-xl border border-line-2 bg-page px-4 py-3.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
+    "mt-2 w-full rounded-xl border border-line-2 bg-page-2 px-4 py-3.5 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-12">
@@ -107,7 +107,7 @@ export function AuthScreen({
         <button
           type="submit"
           disabled={busy}
-          className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
+          className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
         >
           {mode === "register" ? "Create account" : "Sign in"}
           <Glyph name="arrow-right" className="h-4 w-4" />
