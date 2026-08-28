@@ -339,8 +339,17 @@ export function AppShell({
       {/* The wrapper is what is fixed, and it is empty: no background, no filter,
           nothing to repaint. The island inside it is an ordinary element that
           happens to sit there, which is the safest way to put a blurred surface
-          at the bottom of an iOS screen. */}
-      <nav className="pointer-events-none fixed inset-x-0 bottom-0 mx-auto w-full max-w-md px-3 pb-[max(0.45rem,env(safe-area-inset-bottom))]">
+          at the bottom of an iOS screen.
+
+          The offset sits INSIDE the safe area on purpose: a fifth of an inch
+          below what the inset reserves, which on a phone with a home indicator
+          leaves about 14px of screen under the island. That is deliberately
+          close to the floor. The indicator itself occupies roughly the bottom
+          13px and the system swipe intercepts touches over it, so going lower
+          would start eating taps on the outer tabs rather than just looking
+          tighter. On a device with no inset the max() keeps a 5px gap so it
+          still reads as floating. */}
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 mx-auto w-full max-w-md px-3 pb-[max(0.35rem,calc(env(safe-area-inset-bottom)-1.25rem))]">
         <div className="pointer-events-auto flex gap-1 rounded-[1.75rem] border border-line p-1.5 glass-island">
           {TABS.map((t) => (
             <button
