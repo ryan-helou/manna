@@ -148,7 +148,7 @@ export function NotificationSetup({
             className={`mt-3 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
               state === "on"
                 ? "border border-line-2 bg-transparent text-ink-2"
-                : "bg-accent text-page"
+                : "bg-accent text-on-accent"
             }`}
           >
             {state === "working" ? "Working" : state === "on" ? "Turn off" : "Turn on"}

@@ -107,7 +107,7 @@ export function AuthScreen({
         <button
           type="submit"
           disabled={busy}
-          className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
+          className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-on-accent transition active:scale-[0.99] disabled:opacity-60"
         >
           {mode === "register" ? "Create account" : "Sign in"}
           <Glyph name="arrow-right" className="h-4 w-4" />

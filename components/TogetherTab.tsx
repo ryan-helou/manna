@@ -66,7 +66,7 @@ export function TogetherTab({
                   title={`${s.displayName}: ${done ? "read today" : "not yet"}`}
                   className={`flex h-8 w-8 items-center justify-center rounded-full border text-[0.6875rem] font-semibold ${
                     done
-                      ? "border-accent bg-accent text-page"
+                      ? "border-accent bg-accent text-on-accent"
                       : "border-line bg-page-2 text-ink-3"
                   } ${s.userId === me.id ? "ring-2 ring-ink-3 ring-offset-2 ring-offset-[var(--card)]" : ""}`}
                 >

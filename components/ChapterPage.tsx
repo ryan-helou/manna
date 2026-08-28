@@ -72,7 +72,7 @@ export function ChapterPage({
           href={chapterUrl(refr, plan.translation)}
           target="_blank"
           rel="noreferrer"
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99]"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-on-accent transition active:scale-[0.99]"
         >
           Read it in {plan.translation}
           <Glyph name="link" className="h-4 w-4" />
@@ -148,7 +148,7 @@ export function ChapterPage({
         <button
           type="submit"
           disabled={busy || !draft.trim()}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-on-accent transition active:scale-[0.99] disabled:opacity-50"
         >
           <Glyph name="plus" className="h-4 w-4" />
           Post

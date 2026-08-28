@@ -14,11 +14,22 @@
   1. ONE blurring layer per stack. A card blurs the backdrop; the rows inside it
      are flat translucent fills. Blur inside blur reads as fog and costs a
      repaint on every scrolled frame.
-  2. NOTHING FIXED IS BLURRED. iOS repaints a backdrop-filtered fixed bar at a
-     stale position during momentum scrolling, so it detaches and floats over
-     the middle of the screen. The tab bar uses `glass-bar`, which is opaque and
-     tinted to sit in the same family without the filter. Learned the hard way,
-     twice: AmaComp's leaderboard and Manna's own Together tab.
+  2. BLUR ON A FIXED ELEMENT IS THE KNOWN HAZARD. iOS repaints a
+     backdrop-filtered fixed bar at a stale position during momentum scrolling,
+     so it detaches and floats over the middle of the screen. That happened
+     twice: AmaComp's leaderboard, then Manna's own Together tab.
+
+     The tab island is a deliberate exception, because a floating island that
+     does not blur is not an island, it is a lozenge. It is mitigated as hard as
+     the platform allows: the filter sits on a NON-FIXED child of the fixed
+     wrapper, the island owns its own compositing layer through translateZ(0)
+     and will-change, and `--island` is opaque enough that the blur is doing
+     less work than it looks like.
+
+     THE ESCAPE HATCH, if the bar ever floats mid-screen again: delete the two
+     backdrop-filter lines from `glass-island` and raise `--island` toward 0.92.
+     Everything else stays. Nothing else in the app may take a backdrop-filter
+     while fixed.
 */
 @theme {
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
@@ -30,42 +41,39 @@
    Light: glass over unbleached paper, lit from above.
    --------------------------------------------------------------------------- */
 :root {
-  --page: #efe9df;
-  /* Surfaces are translucent COLOURS rather than a separate set of classes, so
-     `bg-card`, `bg-page-2` and `border-line` keep working everywhere they
-     already appear, including inside the conditional tone strings. The `glass`
-     utility then adds only what a colour cannot carry: the blur, the lift and
-     the lit edge. */
-  --page-2: rgb(255 255 255 / 0.46);
-  --card: rgb(255 253 249 / 0.66);
+  /* The ground is a mid tone on purpose. Frosted glass only reads as glass when
+     the pane is lighter than what it sits on; near-white panes on a near-white
+     page are just paper, which is what the first pass got wrong in the light
+     theme. */
+  --page: #dcd4c6;
+  --page-2: rgb(96 82 62 / 0.08);
+  --card: rgb(255 253 249 / 0.62);
   --ink: #191512;
-  --ink-2: #5f564b;
-  --ink-3: #8d8375;
-  --line: rgb(120 104 82 / 0.17);
-  --line-2: rgb(120 104 82 / 0.28);
+  --ink-2: #5b5247;
+  --ink-3: #857b6d;
+  --line: rgb(94 80 60 / 0.16);
+  --line-2: rgb(94 80 60 / 0.3);
 
-  --accent: #9a5f1e;
-  --accent-soft: rgb(154 95 30 / 0.15);
-  --good: #3f7139;
-  --warn: #a04e26;
+  --accent: #92591b;
+  --on-accent: #fdfbf7;
+  --accent-soft: rgb(146 89 27 / 0.14);
+  --good: #3b6b36;
+  --warn: #9a4a22;
 
-  /* The light behind the glass. */
-  --bloom-warm: #e8a94e;
-  --bloom-rose: #d08a6c;
-  --bloom-cool: #7fa6c2;
-  --bloom-violet: #9b8fc0;
-  --bloom-strength: 52%;
+  /* One overhead light and a floor, in the same hue as the room. */
+  --lamp: rgb(255 252 246 / 0.96);
+  --floor: rgb(88 72 52 / 0.26);
   --grain: 0.045;
 
-  /* The panes themselves. */
-  --raised: rgb(252 249 243 / 0.93);
-  --bar: #f4efe6;
+  --raised: rgb(253 251 247 / 0.9);
+  --island: rgb(255 253 249 / 0.84);
+  --bar: #dcd4c6;
   --glass-edge: rgb(255 255 255 / 0.95);
-  --glass-inner: rgb(255 255 255 / 0.5);
-  --sheen: rgb(255 255 255 / 0.5);
+  --glass-inner: rgb(255 255 255 / 0.4);
+  --sheen: rgb(255 255 255 / 0.55);
   --bar-lip: rgb(255 255 255 / 0.6);
-    --glass-shadow: 0 18px 40px -16px rgb(78 58 34 / 0.28), 0 2px 8px -4px rgb(78 58 34 / 0.16);
-  --blur: 26px;
+  --glass-shadow: 0 20px 44px -18px rgb(72 56 34 / 0.4), 0 3px 10px -5px rgb(72 56 34 / 0.24);
+  --blur: 28px;
 
   color-scheme: light;
 }
@@ -76,7 +84,42 @@
    --------------------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --page: #0d0a08;
+    --page: #110d0b;
+    --page-2: rgb(255 246 233 / 0.052);
+    --card: rgb(255 246 233 / 0.075);
+    --ink: #f6f1e8;
+    --ink-2: #b0a493;
+    --ink-3: #7d7264;
+    --line: rgb(255 244 228 / 0.13);
+    --line-2: rgb(255 244 228 / 0.19);
+
+    --accent: #e8b26a;
+  --on-accent: #171310;
+    --on-accent: #171310;
+    --accent-soft: rgb(232 178 106 / 0.16);
+    --good: #8cbd81;
+    --warn: #dd9160;
+
+    --lamp: rgb(255 231 195 / 0.3);
+    --floor: rgb(0 0 0 / 0.72);
+    --grain: 0.055;
+
+    --raised: rgb(28 23 20 / 0.94);
+    --island: rgb(44 36 31 / 0.9);
+    --bar: #1d1714;
+    --glass-edge: rgb(255 246 235 / 0.34);
+    --glass-inner: rgb(255 246 235 / 0.045);
+    --sheen: rgb(255 246 235 / 0.12);
+    --bar-lip: rgb(255 246 235 / 0.05);
+    --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
+    --blur: 28px;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+    --page: #110d0b;
     --page-2: rgb(255 246 233 / 0.052);
     --card: rgb(255 246 233 / 0.075);
     --ink: #f6f1e8;
@@ -90,58 +133,21 @@
     --good: #8cbd81;
     --warn: #dd9160;
 
-    --bloom-warm: #e89a2c;
-    --bloom-rose: #b8523f;
-    --bloom-cool: #2f6f8c;
-    --bloom-violet: #5b3f7d;
-    --bloom-strength: 96%;
+    --lamp: rgb(255 231 195 / 0.3);
+    --floor: rgb(0 0 0 / 0.72);
     --grain: 0.055;
 
     --raised: rgb(28 23 20 / 0.94);
+    --island: rgb(44 36 31 / 0.9);
     --bar: #1d1714;
-    --glass-edge: rgb(255 246 235 / 0.3);
+    --glass-edge: rgb(255 246 235 / 0.34);
     --glass-inner: rgb(255 246 235 / 0.045);
-    --sheen: rgb(255 246 235 / 0.09);
+    --sheen: rgb(255 246 235 / 0.12);
     --bar-lip: rgb(255 246 235 / 0.05);
     --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
     --blur: 28px;
 
     color-scheme: dark;
-  }
-}
-
-:root[data-theme="dark"] {
-    --page: #0d0a08;
-  --page-2: rgb(255 246 233 / 0.052);
-  --card: rgb(255 246 233 / 0.075);
-  --ink: #f6f1e8;
-  --ink-2: #b0a493;
-  --ink-3: #7d7264;
-  --line: rgb(255 244 228 / 0.13);
-  --line-2: rgb(255 244 228 / 0.19);
-
-  --accent: #e8b26a;
-  --accent-soft: rgb(232 178 106 / 0.16);
-  --good: #8cbd81;
-  --warn: #dd9160;
-
-  --bloom-warm: #e89a2c;
-  --bloom-rose: #b8523f;
-  --bloom-cool: #2f6f8c;
-  --bloom-violet: #5b3f7d;
-  --bloom-strength: 96%;
-  --grain: 0.055;
-
-  --raised: rgb(28 23 20 / 0.94);
-  --bar: #1d1714;
-  --glass-edge: rgb(255 246 235 / 0.3);
-  --glass-inner: rgb(255 246 235 / 0.045);
-  --sheen: rgb(255 246 235 / 0.09);
-  --bar-lip: rgb(255 246 235 / 0.05);
-  --glass-shadow: 0 22px 48px -18px rgb(0 0 0 / 0.7), 0 2px 10px -6px rgb(0 0 0 / 0.5);
-  --blur: 28px;
-
-  color-scheme: dark;
 }
 
 @theme inline {
@@ -154,6 +160,7 @@
   --color-line: var(--line);
   --color-line-2: var(--line-2);
   --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
   --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
   --color-warn: var(--warn);
@@ -178,10 +185,14 @@ body {
 
 /*
   A fixed pane of light, rather than `background-attachment: fixed`, which iOS
-  treats as a suggestion. Three slow blooms: dawn along the top, a copper cast
-  low on the left, one cool note bottom right so the warm side has something to
-  be warm against. The grain on top is what stops a gradient this wide from
-  banding, and gives the light somewhere to sit.
+  treats as a suggestion.
+
+  One overhead light and a floor, both in the room's own hue. An earlier version
+  used four coloured blooms and they read as stray dots of blue, purple, red and
+  yellow rather than as light. A single smooth gradient still gives a tall pane
+  something to grade across, top to bottom, which is all the glass needs.
+
+  The grain is what stops a gradient this wide from banding.
 */
 body::before {
   content: "";
@@ -191,26 +202,8 @@ body::before {
   pointer-events: none;
   background-color: var(--page);
   background-image:
-    radial-gradient(
-      132% 38% at 50% -16%,
-      color-mix(in srgb, var(--bloom-warm) var(--bloom-strength), transparent) 0%,
-      transparent 72%
-    ),
-    radial-gradient(
-      78% 40% at 4% 24%,
-      color-mix(in srgb, var(--bloom-rose) calc(var(--bloom-strength) * 0.72), transparent) 0%,
-      transparent 66%
-    ),
-    radial-gradient(
-      70% 38% at 96% 52%,
-      color-mix(in srgb, var(--bloom-violet) calc(var(--bloom-strength) * 0.66), transparent) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      96% 44% at 20% 96%,
-      color-mix(in srgb, var(--bloom-cool) calc(var(--bloom-strength) * 0.8), transparent) 0%,
-      transparent 66%
-    );
+    radial-gradient(160% 66% at 50% -26%, var(--lamp) 0%, transparent 76%),
+    linear-gradient(180deg, transparent 46%, var(--floor) 100%);
 }
 
 body::after {
@@ -270,17 +263,21 @@ body::after {
 }
 
 /*
-  Fixed bars ONLY. Opaque, tinted to sit in the same family, and pinned to its
-  own compositing layer. It must never gain a backdrop-filter: see the note at
-  the top of this file.
+  The tab island: a pane that floats clear of the bottom edge rather than a bar
+  ruled off against it. Read the hazard note at the top of this file before
+  touching the filter here.
 */
-@utility glass-bar {
-  background-color: var(--bar);
-  background-image: linear-gradient(180deg, var(--bar-lip) 0%, transparent 42%);
+@utility glass-island {
+  background-color: var(--island);
+  background-image: linear-gradient(158deg, var(--sheen) 0%, transparent 48%);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
   box-shadow:
-    inset 0 1px 0 0 var(--glass-edge),
-    0 -14px 34px -18px rgb(0 0 0 / 0.7);
+    0 20px 44px -14px rgb(0 0 0 / 0.5),
+    0 4px 12px -6px rgb(0 0 0 / 0.34),
+    inset 0 1px 0 0 var(--glass-edge);
   transform: translateZ(0);
+  will-change: transform;
 }
 
 /*

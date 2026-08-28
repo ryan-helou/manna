@@ -60,7 +60,7 @@ export function MilestoneCard({
 
         <button
           onClick={onClose}
-          className="mt-7 w-full rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99]"
+          className="mt-7 w-full rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-on-accent transition active:scale-[0.99]"
         >
           Keep going
         </button>

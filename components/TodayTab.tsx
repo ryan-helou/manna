@@ -214,7 +214,7 @@ export function TodayTab({
         <button
           onClick={() => onToggleDay(day, !done)}
           className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-base font-semibold transition active:scale-[0.99] ${
-            done ? "border border-good bg-transparent text-good" : "bg-accent text-page"
+            done ? "border border-good bg-transparent text-good" : "bg-accent text-on-accent"
           }`}
         >
           <span className={done ? "tick-in" : ""}>
@@ -449,7 +449,7 @@ export function TodayTab({
             <button
               type="submit"
               disabled={busy}
-              className="mt-2 flex items-center gap-1.5 rounded-lg bg-accent accent-fill px-4 py-2 text-sm font-semibold text-page transition active:scale-[0.99] disabled:opacity-60"
+              className="mt-2 flex items-center gap-1.5 rounded-lg bg-accent accent-fill px-4 py-2 text-sm font-semibold text-on-accent transition active:scale-[0.99] disabled:opacity-60"
             >
               <Glyph name="plus" className="h-4 w-4" />
               Post
@@ -496,7 +496,7 @@ function ChapterRow({
       >
         <span
           className={`flex h-5 w-5 items-center justify-center rounded-md border transition ${
-            read ? "border-good bg-good text-page" : "border-line-2 text-transparent"
+            read ? "border-good bg-good text-on-accent" : "border-line-2 text-transparent"
           }`}
         >
           <span className={read ? "tick-in" : ""}>

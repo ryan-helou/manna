@@ -74,7 +74,7 @@ export function AddPlanSheet({
           <button
             type="submit"
             disabled={busy || code.length < 4}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-on-accent transition active:scale-[0.99] disabled:opacity-50"
           >
             Join
             <Glyph name="arrow-right" className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function AddPlanSheet({
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-page transition active:scale-[0.99] disabled:opacity-50"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3.5 text-base font-semibold text-on-accent transition active:scale-[0.99] disabled:opacity-50"
           >
             Start it
             <Glyph name="arrow-right" className="h-4 w-4" />

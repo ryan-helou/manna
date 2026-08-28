@@ -190,7 +190,7 @@ function ReplyBox({
         <button
           type="submit"
           disabled={busy || !draft.trim()}
-          className="rounded-lg bg-accent accent-fill px-3 py-1.5 text-xs font-semibold text-page transition disabled:opacity-50"
+          className="rounded-lg bg-accent accent-fill px-3 py-1.5 text-xs font-semibold text-on-accent transition disabled:opacity-50"
         >
           Post
         </button>

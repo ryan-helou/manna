@@ -65,7 +65,7 @@ export function InviteCard({ planName, code }: { planName: string; code: string 
               // A cancelled share sheet is not a failure.
             }
           }}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-page transition active:scale-[0.99]"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent accent-fill px-4 py-3 text-sm font-semibold text-on-accent transition active:scale-[0.99]"
         >
           <Glyph name="link" className="h-4 w-4" />
           Send invite
