@@ -192,7 +192,9 @@ export function AppShell({
         </button>
       </header>
 
-      <main className="flex-1">
+      {/* The tab bar is fixed, so the scroll region carries the clearance for it.
+          One place, so a new tab cannot forget it. */}
+      <main className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))]">
         {tab === "today" && (
           <TodayTab
             plan={plan}
@@ -273,8 +275,17 @@ export function AppShell({
         )}
       </main>
 
-      {/* ---- tab bar ---- */}
-      <nav className="sticky bottom-0 -mx-4 mt-4 border-t border-line bg-page/95 px-4 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+      {/* ---- tab bar ----
+          Fixed, not sticky: sticky pins to the containing block rather than the
+          viewport, and a bottom bar that loses the viewport strands itself
+          across the middle of the screen with the page running on underneath.
+
+          Solid, not `bg-page/95 backdrop-blur`: iOS repaints a blurred bar at a
+          stale position during momentum scrolling, so it detaches and floats
+          mid-scroll before snapping back. AmaComp's tab bar did exactly this
+          over its leaderboard. translateZ(0) gives the bar its own compositing
+          layer so it stays put. */}
+      <nav className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-md border-t border-line bg-page px-4 pb-[env(safe-area-inset-bottom)] [transform:translateZ(0)]">
         <div className="flex">
           {TABS.map((t) => (
             <button
