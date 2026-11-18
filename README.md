@@ -1,6 +1,12 @@
+<div align="center">
+
 # Manna
 
-A Bible reading plan app for a small group of friends that takes you through the whole Bible, paced by how long each chapter takes to read.
+**A Bible reading plan app for a small group of friends that takes you through the whole Bible, paced by how long each chapter takes to read.**
+
+</div>
+
+<br>
 
 Most reading plans give you the same number of chapters each day, even though some chapters are much longer or harder than others. Manna estimates how many minutes each of the 1,189 chapters takes to read and understand, then spreads them out so each day takes about the same amount of time. Some days are one chapter, others are five. It is made for friends reading together, and can be added to a phone's home screen like a regular app.
 
